@@ -25,6 +25,7 @@ public:
     Total_thick = 0;
     n_sens_elements=0;
     n_elements=0;
+    n_sectors=0;
     ele_thick.clear();
     ele_name.clear();
     ele_X0.clear();
@@ -55,11 +56,19 @@ public:
 
     std::cout << " -- End of sampling section initialisation. Input " << aThicknessVec.size() << " elements, constructing " << n_elements << " elements with " << n_sens_elements << " sensitive elements." << std::endl;
 
-  }
+  };
 
   //DTOR
-  ~SamplingSection() { }
-  
+  ~SamplingSection() { };
+
+  inline void setNumberOfSectors(const unsigned nSec){
+    n_sectors = nSec;
+    ele_vol.clear();
+    for (unsigned ie(0);  ie<n_elements*n_sectors; ++ie){
+      ele_vol.push_back(0);
+    }
+  };
+
   //
   void add(G4double den, G4double dl, 
 	   G4double globalTime,G4int pdgId,
@@ -69,7 +78,7 @@ public:
 	   G4int layerId);
   
   inline bool isSensitiveElement(const unsigned & aEle){
-    if (aEle < n_elements && 
+    if (aEle < n_elements &&
 	(ele_name[aEle] == "Si" || ele_name[aEle] == "Scintillator")
 	) return true;
     return false;
@@ -88,7 +97,7 @@ public:
   };
 
   inline G4Colour g4Colour(const unsigned & aEle){
-    if (isSensitiveElement(aEle)) return G4Colour::White();
+    if (isSensitiveElement(aEle)) return G4Colour::Red();
     if (ele_name[aEle] == "Cu") return G4Colour::Black();
     if (isAbsorberElement(aEle)) return G4Colour::Gray();
     if (ele_name[aEle] == "PCB") return G4Colour::Blue();
@@ -155,6 +164,7 @@ public:
 
   //members
   unsigned n_elements;
+  unsigned n_sectors;
   unsigned n_sens_elements;
   std::vector<G4double>           ele_thick;
   std::vector<std::string>        ele_name;

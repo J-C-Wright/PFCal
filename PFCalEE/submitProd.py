@@ -10,13 +10,14 @@ random.seed()
 
 usage = 'usage: %prog [options]'
 parser = optparse.OptionParser(usage)
-parser.add_option('-s', '--short-queue',    dest='squeue'             , help='short batch queue'            , default='1nd')
-parser.add_option('-q', '--long-queue' ,    dest='lqueue'             , help='long batch queue'             , default='2nw')
+parser.add_option('-s', '--short-queue' ,    dest='squeue'             , help='short batch queue'            , default='1nd')
+parser.add_option('-q', '--long-queue'  ,    dest='lqueue'             , help='long batch queue'             , default='2nw')
 parser.add_option('-t', '--git-tag'     ,    dest='gittag'             , help='git tag version'              , default='V00-00-00')
 parser.add_option('-r', '--run'         ,    dest='run'                , help='stat run'                     , default=-1,      type=int)
 parser.add_option('-v', '--version'     ,    dest='version'            , help='detector version'             , default=3,      type=int)
 parser.add_option('-m', '--model'       ,    dest='model'              , help='detector model'               , default=3,      type=int)
-parser.add_option('-a', '--eta'       ,    dest='eta'              , help='incidence eta'       , default=0,      type=float)
+parser.add_option('-a', '--eta'         ,    dest='eta'                , help='incidence eta'                , default=0,      type=float)
+parser.add_option('-p', '--phi'         ,    dest='phi'                , help='incidence phi angle in pi unit' , default=0.5,      type=float)
 parser.add_option('-b', '--Bfield'      ,    dest='Bfield'             , help='B field value in Tesla'       , default=0,      type=float)
 parser.add_option('-d', '--datatype'    ,    dest='datatype'           , help='data type or particle to shoot', default='e-')
 parser.add_option('-f', '--datafile'    ,    dest='datafile'           , help='full path to HepMC input file', default='data/example_MyPythia.dat')
@@ -31,8 +32,8 @@ enlist=[0]
 if opt.dogun : 
     #enlist=[3,5,7,10,20,30,40,50,60,70,80,90,100,125,150,175,200]
     #enlist=[2,5,10,20,40,60,80,100,150,200]
-    enlist=[3,5,10,30,50,70,100,200]
-    #enlist=[16,82,160]
+    #enlist=[3,5,10,30,50,70,100,200]
+    enlist=[60]
 
 #hgg seeds
 #for seed in 1417791355 1417791400 1417791462 1417791488 1417791672 1417791741 1417791747 1417791766 1417791846
@@ -40,9 +41,6 @@ if opt.dogun :
 #run=1; for seed in 1417791355 1417791400 1417791462 1417791488 1417791672 1417791741 1417791747 1417791766 1417791846; do ./submitProd.py -s 1nw -q 1nw -t V00-02-14 -v 12 -m 2 -d Hgg -f /afs/cern.ch/work/a/amagnan/public/HepMCFiles/ggHgg_${seed}.dat -r ${run} -n 1300 -o /afs/cern.ch/work/a/amagnan/public/HGCalEEGeant4/ -e /store/cmst3/group/hgcal/HGCalEEGeant4; let run=$run+1; done
 #vbfHgg seeds
 #for seed in 1420833683 1420833689 1420833693 1420833695 1420833696 1420833717
-
-#nvtxlist=[0,140]
-#INPATHPU="root://eoscms//eos/cms/store/user/msun/V25/MinBias/"
 
 ##30
 wthick='1.75,1.75,1.75,1.75,1.75,2.8,2.8,2.8,2.8,2.8,4.2,4.2,4.2,4.2,4.2'
@@ -67,35 +65,6 @@ label=''
 #label='v5_18'
 
 
-granularity='0-20:4,21-63:6'
-noise='0-63:0.12'
-threshold='0-63:2'
-
-if (opt.version==8) :
-    granularity='0-20:4,21-30:6'
-    noise='0-30:0.14'
-    threshold='0-30:2'
-elif opt.version<20 :
-    granularity='0-19:4,20-29:4'
-    noise='0-29:0.14'
-    threshold='0-29:2'
-elif (opt.version==21 or opt.version==24):
-    granularity='0-23:6,24-33:8'
-    noise='0-33:0.14'
-    threshold='0-33:2'
-elif opt.version==22:
-    granularity='0-9:8'
-    noise='0-9:0.14'
-    threshold='0-9:2'
-elif opt.version==23:
-    granularity='0-53:12'
-    noise='0-53:0.12'
-    threshold='0-53:2'
-elif opt.version>24:
-    granularity='0-29:4,30-53:4,54-65:8'
-    noise='0-53:0.14,54-65:0.2'
-    threshold='0-53:2,54-65:4'
-
 for et in enlist :
 
     nevents=opt.nevts
@@ -112,9 +81,8 @@ for et in enlist :
     if et>0 : outDir='%s/et_%d'%(outDir,et)
     eosDir='%s/git%s/%s'%(opt.eos,opt.gittag,opt.datatype)
     if opt.eta>0 : outDir='%s/eta_%3.3f/'%(outDir,opt.eta)
+    if opt.phi!=0.5 : outDir='%s/phi_%3.3fpi/'%(outDir,opt.phi) 
     if (opt.run>=0) : outDir='%s/run_%d/'%(outDir,opt.run)
-
-    outlog='%s/digitizer.log'%(outDir)
 
     os.system('mkdir -p %s'%outDir)
 
@@ -128,10 +96,10 @@ for et in enlist :
     outTag='%s_version%d_model%d_%s'%(label,opt.version,opt.model,bval)
     if et>0 : outTag='%s_et%d'%(outTag,et)
     if opt.eta>0 : outTag='%s_eta%3.3f'%(outTag,opt.eta) 
+    if opt.phi!=0.5 : outTag='%s_phi%3.3fpi'%(outTag,opt.phi) 
     if (opt.run>=0) : outTag='%s_run%d'%(outTag,opt.run)
     scriptFile.write('mv PFcal.root HGcal_%s.root\n'%(outTag))
     scriptFile.write('localdir=`pwd`\n')
-    #scriptFile.write('%s/userlib/bin/digitizer 0 $localdir/HGcal_%s.root $localdir/ %s %s %s 0 | tee %s\n'%(os.getcwd(),outTag,granularity,noise,threshold,outlog))
     scriptFile.write('echo "--Local directory is " $localdir >> g4.log\n')
     scriptFile.write('ls * >> g4.log\n')
     if len(opt.eos)>0:
@@ -152,45 +120,6 @@ for et in enlist :
         scriptFile.write('rm HGcal_%s.root\n'%(outTag))
         scriptFile.write('fi\n')
         scriptFile.write('fi\n')
-        #scriptFile.write('cmsStage -f DigiPFcal.root %s/Digi_%s.root\n'%(eosDir,outTag))
-        #scriptFile.write('if (( "$?" != "0" )); then\n')
-        #scriptFile.write('echo " --- Problem with copy of file DigiPFcal.root to EOS. Keeping locally." >> g4.log\n')
-        #scriptFile.write('else\n')
-        #scriptFile.write('eossize=`$myeos ls -l %s/Digi_%s.root | awk \'{print $5}\'`\n'%(eosDir,outTag))
-        #scriptFile.write('localsize=`ls -l DigiPFcal.root | awk \'{print $5}\'`\n')
-        #scriptFile.write('if (( "$eossize" != "$localsize" )); then\n')
-        #scriptFile.write('echo " --- Copy of digi file to eos failed. Localsize = $localsize, eossize = $eossize. Keeping locally..." >> g4.log\n')
-        #scriptFile.write('else\n')
-        #scriptFile.write('echo " --- Size check done: Localsize = $localsize, eossize = $eossize" >> g4.log\n')
-        #scriptFile.write('echo " --- File DigiPFcal.root successfully copied to EOS: %s/Digi_%s.root" >> g4.log\n'%(eosDir,outTag))
-        #scriptFile.write('rm DigiPFcal.root\n')
-        #scriptFile.write('fi\n')
-        #scriptFile.write('fi\n')
-    #else:
-        #scriptFile.write('mv DigiPFcal.root Digi_%s.root\n'%(nvtx,outTag))
-
-    #for nvtx in nvtxlist:
-        #scriptFile.write('%s/userlib/bin/digitizer 0 $localdir/HGcal_%s.root $localdir/ %s %s %s %d %s | tee %s\n'%(os.getcwd(),outTag,granularity,noise,threshold,nvtx,INPATHPU,outlog))
-        #if len(opt.eos)>0:
-            #scriptFile.write('cmsStage -f DigiPFcal.root %s/DigiPu%d_%s.root\n'%(eosDir,nvtx,outTag))
-            #scriptFile.write('if (( "$?" != "0" )); then\n')
-            #scriptFile.write('echo " --- Problem with copy of file DigiPFcal.root to EOS." >> g4.log\n')
-            #scriptFile.write('else\n')
-            #scriptFile.write('eossize=`$myeos ls -l %s/DigiPu%d_%s.root | awk \'{print $5}\'`\n'%(eosDir,nvtx,outTag))
-            #scriptFile.write('localsize=`ls -l DigiPFcal.root | awk \'{print $5}\'`\n')
-            #scriptFile.write('if (( "$eossize" != "$localsize" )); then\n')
-            #scriptFile.write('echo " --- Copy of digi file to eos failed. Localsize = $localsize, eossize = $eossize...." >> g4.log\n')
-            #scriptFile.write('else\n')
-            #scriptFile.write('echo " --- Size check done: Localsize = $localsize, eossize = $eossize" >> g4.log\n')
-            #scriptFile.write('echo " --- File DigiPFcal.root successfully copied to EOS: %s/DigiPu%d_%s.root" >> g4.log\n'%(eosDir,nvtx,outTag))
-            #scriptFile.write('fi\n')
-            #scriptFile.write('fi\n')
-        #else:
-            #scriptFile.write('mv DigiPFcal.root DigiPu%d_%s.root\n'%(nvtx,outTag))
-
-    #if len(opt.eos)>0:
-        #scriptFile.write('rm DigiPFcal.root\n')
-        #scriptFile.write('rm HGcal_%s.root\n'%(outTag))
 
     scriptFile.write('echo "--deleting core files: too heavy!!"\n')
     scriptFile.write('rm core.*\n')
@@ -211,8 +140,12 @@ for et in enlist :
     if opt.dogun :
         g4Macro.write('/generator/select particleGun\n')
         g4Macro.write('/gun/particle %s\n'%(opt.datatype))
-        en=et*math.cosh(opt.eta)
+        if opt.eta<5 : en=et*math.cosh(opt.eta)
+        else : en=et
         g4Macro.write('/gun/energy %f GeV\n'%(en))
+        if opt.model!=2 :
+            alpha = 2*math.atan(math.exp(-1.*opt.eta));
+            g4Macro.write('/gun/direction %f %f %f\n'%(math.cos(math.pi*opt.phi)*math.sin(alpha),math.sin(math.pi*opt.phi)*math.sin(alpha),math.cos(alpha)))
         #g4Macro.write('/gun/direction %f %f %f\n'%(math.cos(math.pi*opt.phi)*math.sin(opt.alpha),math.sin(math.pi*opt.phi)*math.sin(opt.alpha),math.cos(opt.alpha)))
         #g4Macro.write('/gun/direction %f %f %f\n'%(random.uniform(0,1000)/100.-5.,math.sin(opt.alpha),math.cos(opt.alpha)))
     else :
