@@ -188,13 +188,6 @@ int main(int argc, char** argv){//main
     }
   }
 
-    std::cout << "---- NEW INPUT FILE TEST ----" << std::endl;
-    std::ostringstream test;
-    test << "/afs/cern.ch/work/a/amagnan/public/HGCalJack/git_V06-03-04/version_100/model_3/gamma/eta20_et20_pu0_IC3_Si2.root";
-    if (testInputFile(test.str(),simFile)) { std::cout << "Test worked" << std::endl; }
-    else { std:cout << "Test failed" << std::endl; }
-
-
   if (!lSimTree){
     std::cout << " -- Error, tree HGCSSTree cannot be opened. Exiting..." << std::endl;
     return 1;
@@ -304,7 +297,7 @@ int main(int argc, char** argv){//main
         lRecTree->GetEntry(ievt);
 
         std::cout << "Done!" << std::endl;
-        std::cout << "Producing... ";
+        std::cout << "Producing... " << std::endl;
 
         if ((*genvec).size() == 1) {
             photonCount++;
@@ -373,21 +366,21 @@ int main(int argc, char** argv){//main
             //Truth position vs truth minus energy weighted histos
             TrackTruth track = tracks[eventLoop];       
 
-            std::cout << "\tPhi: " << track.particleInfo.phi() << std::endl;
-            layerEWXHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].X(),track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X());
-            layerEWYHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].Y(),track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y());
-            layerEWrHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].first,
-                                            track.truthPositionsrPhi[layerLoop].first - track.energyWeightedrPhi[layerLoop].first);
-            layerEWrPhiHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].second,
-                                               track.truthPositionsrPhi[layerLoop].second - track.energyWeightedrPhi[layerLoop].second);
+            //Check it's not a dummy entry and fill the histos
+            if (track.distsFromHitCentre[layerLoop].X() < 9999 && track.distsFromHitCentre[layerLoop].Y() < 9999) {
+                layerEWXHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].X(),track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X());
+                layerEWYHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].Y(),track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y());
+                layerEWrHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].first,
+                                                track.truthPositionsrPhi[layerLoop].first - track.energyWeightedrPhi[layerLoop].first);
+                layerEWrPhiHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].second,
+                                                   track.truthPositionsrPhi[layerLoop].second - track.energyWeightedrPhi[layerLoop].second);
+            }
 
-    
             //Error in position by layer
             errorEWX[layerLoop] += track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X();       
             errorEWY[layerLoop] += track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y();       
 
             //Mean number of empty cells
-            std::cout << "Number of empty cells " << 9 - track.hitsByLayer3x3[layerLoop].size() << std::endl;
             meanNumEmptyIn3x3[layerLoop] += 9 - track.hitsByLayer3x3[layerLoop].size();
             //Fraction no hits
             if (track.distsFromHitCentre[layerLoop].X() > 9000) {fracNoHits[layerLoop] += 1.0;} 
@@ -402,13 +395,6 @@ int main(int argc, char** argv){//main
         meanNumEmptyIn3x3[layerLoop] /= (float)photonCount;
         fracNoHits[layerLoop] /= (float)photonCount;
         fracAll3x3Energy[layerLoop] /= (float)photonCount;
-
-        std::cout << setw(12) << errorEWX[layerLoop];
-        std::cout << setw(12) << errorEWY[layerLoop];
-        std::cout << setw(12) << meanEnergyDeposited[layerLoop];
-        std::cout << setw(12) << meanNumEmptyIn3x3[layerLoop];
-        std::cout << setw(12) << fracNoHits[layerLoop];
-        std::cout << setw(12) << fracAll3x3Energy[layerLoop] << std::endl;
 
     }
 
@@ -429,15 +415,12 @@ int main(int argc, char** argv){//main
         name << "EWX_Segment_" << centralPhi;
         TString histName = name.str(); 
         phiSegmentEWXHistos[segment] = new TH2F(histName,histName,50,-0.5,0.5,50,-3,3);   
-        std::cout << histName << " initialised" << std::endl;
 
         name.str(std::string());
         name << "EWY_Segment_" << centralPhi;
         histName = name.str(); 
         phiSegmentEWYHistos[segment] = new TH2F(histName,histName,50,-0.5,0.5,50,-3,3);   
-        std::cout << histName << " initialised" << std::endl;
 
-        std::cout << "Calculating segment " << segment << std::endl;
         for (unsigned trackLoop(0);trackLoop<tracks.size();trackLoop++) {
             TrackTruth track = tracks[trackLoop];       
             if (track.particleInfo.phi() > centralPhi-dPhi && track.particleInfo.phi() < centralPhi+dPhi) { 
@@ -525,134 +508,5 @@ int main(int argc, char** argv){//main
   
     return 0;
 
-
-
-/*
-    PositionTruthProducer positionTruthProducer(nLayers, debugFlag);
-    positionTruthProducer.getLayerZPositions(versionNumber);
-
-    Double_t layerError[nLayers];
-    Double_t layerNumbers[nLayers];
-    Double_t energies[nLayers];
-
-    TH2F * plot = new TH2F("xtxew","",50,-0.5,0.5,50,-5,5);
-    TH1F * energies_1to4 = new TH1F("energies_1to4","",50,0,50);
-    
-    std::vector<TH2F*> layerHistos(nLayers);
-    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
-        std::ostringstream name;
-        name << "xt_xew_layer"<< layerLoop;
-        TString histName = name.str(); 
-        layerHistos[layerLoop] = new TH2F(histName,histName,50,-0.5,0.5,50,-5,5);   
-    }
-
-    unsigned int numEventsUsed(0);
-    for (unsigned ievt(0); ievt<nEvts; ++ievt){
-
-        std::cout << "... Processing entry: " << ievt << std::endl;
-        lSimTree->GetEntry(ievt);
-        lRecTree->GetEntry(ievt);
-
-        for (unsigned int hitLoop(0);hitLoop<(*rechitvec).size();hitLoop++) {
-            if ((*rechitvec)[hitLoop].layer() < 5 && (*rechitvec)[hitLoop].layer() != 0) {
-                energies_1to4->Fill((*rechitvec)[hitLoop].energy());
-            }
-        }
-
-        for (unsigned int hitLoop(0);hitLoop<(*rechitvec).size();hitLoop++) {
-            energies[(*rechitvec)[hitLoop].layer()] += (*rechitvec)[hitLoop].energy();
-        }
- 
-        if ((*genvec).size() == 1) {
-
-            numEventsUsed++;
-            positionTruthProducer.calcTruthPositions(genvec,ievt);
-            positionTruthProducer.calcEnergyWeightedXYTruth(rechitvec,geomConv,nSR);
-            PositionTruth track = positionTruthProducer.getPosition(0);
-            std::vector<ROOT::Math::XYPoint> ewPoints = positionTruthProducer.getEnergyWeightedXY(0);
-   
-            for (unsigned int pointLoop(1);pointLoop<ewPoints.size();pointLoop++) {
-            
-                plot->Fill(track.distsFromHitCentre[pointLoop].first,track.truthPositions[pointLoop].X() - ewPoints[pointLoop].X());
-                layerHistos[pointLoop]->Fill(track.distsFromHitCentre[pointLoop].first,track.truthPositions[pointLoop].X() - ewPoints[pointLoop].X());
-                layerError[pointLoop] += sqrt(pow(track.truthPositions[pointLoop].X() - ewPoints[pointLoop].X(),2)
-                                                +pow(track.truthPositions[pointLoop].Y() - ewPoints[pointLoop].Y(),2));
-            }
-
-            positionTruthProducer.clearEntries();
-
-        }else{
-            std::cout << "Event skipped - not single photon" << std::endl;
-        }
-    }
-
-    outputFile->cd();
-
-    //Projections onto Y-axis
-    std::vector<std::vector<TH1D*>> projections(nLayers);
-    std::vector<TGraphErrors*> layerCurves(nLayers);
-    Double_t inCellPos[10];
-    Double_t xErr[10];
-    for (unsigned int i(0);i<10;i++) {    
-        inCellPos[i] = -0.45 + i*0.1;
-        xErr[i] = 0;
-    }
-    
-    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
-        Double_t layerValues[10];
-        Double_t layerErrors[10];
-        for (unsigned int i(0);i<10;i++) {
-            projections[layerLoop].push_back(layerHistos[layerLoop]->ProjectionY("",i*5,(i+1)*5));
-            TFitResultPtr r = projections[layerLoop][i]->Fit("gaus","QS");
-            if(layerLoop == 14) {projections[layerLoop][i]->Write();}
-            if (!r->IsEmpty()) {
-                layerValues[i] = r->Parameter(1);
-                layerErrors[i] = r->Parameter(2);
-            }
-        }
-        layerCurves[layerLoop] = new TGraphErrors(10,inCellPos,layerValues,xErr,layerErrors);
-        std::ostringstream name;
-        name << "Layer"<< layerLoop;
-        TString graphName = name.str(); 
-        layerCurves[layerLoop]->SetTitle(graphName);
-        layerCurves[layerLoop]->SetMarkerStyle(1);
-    }
-
-    for (unsigned int i(0);i<nLayers;i++) {
-        layerError[i] /= (float)numEventsUsed;
-        energies[i] /= (float)numEventsUsed;
-        layerNumbers[i] = (float)i;
-    }
-
-    const Int_t num = nLayers;
-    TGraph * errorsByLayer = new TGraph(num,layerNumbers,layerError);
-    errorsByLayer->SetTitle("x_true - x_EW");
-
-    TGraph * energiesByLayer = new TGraph(num,layerNumbers,energies);
-    energiesByLayer->SetTitle("Energies by layer");
-
-    TCanvas c1("c1");
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerHistos[layerLoop]->Write();        
-        layerHistos[layerLoop]->Draw();
-        c1.Print("plots.gif+20");
-    }
-    c1.Print("plots.gif++");
-
-    TCanvas c2("c2");
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerCurves[layerLoop]->Write();
-        c2.Clear();
-        layerCurves[layerLoop]->Draw();
-        c2.Print("graphs.gif+20");
-    }
-    c2.Print("graphs.gif++");
-
-    energiesByLayer->Write();
-    errorsByLayer->Write();
-    energies_1to4->Write();
-    plot->Write();
-*/
-  
 
 }//main

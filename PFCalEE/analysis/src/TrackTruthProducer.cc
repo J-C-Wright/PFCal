@@ -108,61 +108,82 @@ using namespace std;
                         }
                     }     
 
-                    double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
-                    double step = geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
+                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < 2) {
 
-                    //Calculate the distance from the truth to the centre of the closest cell
-                    //XY
-                    float dx = (trackVec[trackLoop].truthPositions[layerLoop].X()
-                                                - hitsByLayer_[layerLoop][closestCellIndex].get_x())/geomConv.cellSize(layerLoop,radialDisplacement);
-                    float dy = (trackVec[trackLoop].truthPositions[layerLoop].Y()
-                                                - hitsByLayer_[layerLoop][closestCellIndex].get_y())/geomConv.cellSize(layerLoop,radialDisplacement);
-                    ROOT::Math::XYPoint displacement(dx,dy);
-                    trackVec[trackLoop].distsFromHitCentre.push_back(displacement);
-                    //r rPhi
-                    std::pair<float,float> rPhi = rPhiCoordinates(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
-                    std::pair<float,float> displacementrPhi(trackVec[trackLoop].truthPositionsrPhi[layerLoop].first-rPhi.first,
-                                                            trackVec[trackLoop].truthPositionsrPhi[layerLoop].second-rPhi.second);
-                    trackVec[trackLoop].distsFromHitCentrerPhi.push_back(displacementrPhi);
+                        //Treat hit as empty, fill with dummy info
+                        std::cout << "---- " << "In layer " << layerLoop << " Energy of central hit is < 2 MIPs ----" << std::endl;
+                        std::vector<HGCSSRecoHit> empty(0);
+                        trackVec[trackLoop].hitsByLayer3x3.push_back(empty);
+                        //XY
+                        ROOT::Math::XYPoint point(0,0);
+                        trackVec[trackLoop].energyWeightedXY.push_back(point);
+                        ROOT::Math::XYPoint dispFromCentre(9999.,9999.);
+                        trackVec[trackLoop].distsFromHitCentre.push_back(dispFromCentre);
+                        //rPhi
+                        std::pair<float,float> displacementrPhiEmpty(9999.,9999.);
+                        std::pair<float,float> energyWeightedrPhiEmpty(0,0);
+                        trackVec[trackLoop].energyWeightedrPhi.push_back(energyWeightedrPhiEmpty);
+                        trackVec[trackLoop].distsFromHitCentrerPhi.push_back(displacementrPhiEmpty);
 
-                    //find the hits that belong to the 3x3 grid centred on the closest
-                    std::vector<HGCSSRecoHit> retainedHits;
-                    for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
-                        if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step &&
-                            fabs(hitsByLayer_[layerLoop][hitLoop].get_y() - hitsByLayer_[layerLoop][closestCellIndex].get_y() ) < step) {
-                            retainedHits.push_back(hitsByLayer_[layerLoop][hitLoop]);
+                    }else{
+
+                        //Hit is good, do EW calcs
+                        double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
+                        double step = geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
+
+                        //Calculate the distance from the truth to the centre of the closest cell
+                        //XY
+                        float dx = (trackVec[trackLoop].truthPositions[layerLoop].X()
+                                                    - hitsByLayer_[layerLoop][closestCellIndex].get_x())/geomConv.cellSize(layerLoop,radialDisplacement);
+                        float dy = (trackVec[trackLoop].truthPositions[layerLoop].Y()
+                                                    - hitsByLayer_[layerLoop][closestCellIndex].get_y())/geomConv.cellSize(layerLoop,radialDisplacement);
+                        ROOT::Math::XYPoint displacement(dx,dy);
+                        trackVec[trackLoop].distsFromHitCentre.push_back(displacement);
+                        //r rPhi
+                        std::pair<float,float> rPhi = rPhiCoordinates(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
+                        std::pair<float,float> displacementrPhi(trackVec[trackLoop].truthPositionsrPhi[layerLoop].first-rPhi.first,
+                                                                trackVec[trackLoop].truthPositionsrPhi[layerLoop].second-rPhi.second);
+                        trackVec[trackLoop].distsFromHitCentrerPhi.push_back(displacementrPhi);
+
+                        //find the hits that belong to the 3x3 grid centred on the closest
+                        std::vector<HGCSSRecoHit> retainedHits;
+                        for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
+                            if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step &&
+                                fabs(hitsByLayer_[layerLoop][hitLoop].get_y() - hitsByLayer_[layerLoop][closestCellIndex].get_y() ) < step) {
+                                retainedHits.push_back(hitsByLayer_[layerLoop][hitLoop]);
+                            }
+                        } 
+                        trackVec[trackLoop].hitsByLayer3x3.push_back(retainedHits);
+
+                        //Calculate energy-weighted position
+                        //X Y position
+                        double energyWeightedX(0.0), energyWeightedY(0.0);
+                        double totalEnergy(0.0);
+                        for (unsigned int hitLoop(0);hitLoop<retainedHits.size();hitLoop++) {
+                            energyWeightedX += retainedHits[hitLoop].get_x()*retainedHits[hitLoop].energy();
+                            energyWeightedY += retainedHits[hitLoop].get_y()*retainedHits[hitLoop].energy();
+                            totalEnergy += retainedHits[hitLoop].energy();
                         }
-                    } 
-                    trackVec[trackLoop].hitsByLayer3x3.push_back(retainedHits);
+                        energyWeightedX /= totalEnergy;
+                        energyWeightedY /= totalEnergy;
+                        ROOT::Math::XYPoint point(energyWeightedX,energyWeightedY);
+                        trackVec[trackLoop].energyWeightedXY.push_back(point);
+                        //r rPhi
+                        double energyWeightedr(0.0), energyWeightedPhi(0.0);
+                        for (unsigned int hitLoop(0);hitLoop<retainedHits.size();hitLoop++) {
+                            std::pair<float,float> tilerPhi = rPhiCoordinates(retainedHits[hitLoop].get_x(),retainedHits[hitLoop].get_y());
+                            energyWeightedr   += tilerPhi.first*retainedHits[hitLoop].energy(); 
+                            energyWeightedPhi += tilerPhi.second*retainedHits[hitLoop].energy(); 
+                        }
+                        energyWeightedr /= totalEnergy;
+                        energyWeightedPhi /= totalEnergy;
+                        std::pair<float,float> pointrPhi(energyWeightedr,energyWeightedPhi);
+                        trackVec[trackLoop].energyWeightedrPhi.push_back(pointrPhi);
 
-                    //Calculate energy-weighted position
-                    //X Y position
-                    double energyWeightedX(0.0), energyWeightedY(0.0);
-                    double totalEnergy(0.0);
-                    for (unsigned int hitLoop(0);hitLoop<retainedHits.size();hitLoop++) {
-                        energyWeightedX += retainedHits[hitLoop].get_x()*retainedHits[hitLoop].energy();
-                        energyWeightedY += retainedHits[hitLoop].get_y()*retainedHits[hitLoop].energy();
-                        totalEnergy += retainedHits[hitLoop].energy();
                     }
-                    energyWeightedX /= totalEnergy;
-                    energyWeightedY /= totalEnergy;
-                    ROOT::Math::XYPoint point(energyWeightedX,energyWeightedY);
-                    trackVec[trackLoop].energyWeightedXY.push_back(point);
-                    //r rPhi
-                    double energyWeightedr(0.0), energyWeightedPhi(0.0);
-                    for (unsigned int hitLoop(0);hitLoop<retainedHits.size();hitLoop++) {
-                        std::pair<float,float> tilerPhi = rPhiCoordinates(retainedHits[hitLoop].get_x(),retainedHits[hitLoop].get_y());
-                        energyWeightedr   += tilerPhi.first*retainedHits[hitLoop].energy(); 
-                        energyWeightedPhi += tilerPhi.second*retainedHits[hitLoop].energy(); 
-                    }
-                    energyWeightedr /= totalEnergy;
-                    energyWeightedPhi /= totalEnergy;
-                    std::pair<float,float> pointrPhi(energyWeightedr,energyWeightedPhi);
-                    trackVec[trackLoop].energyWeightedrPhi.push_back(pointrPhi);
-
                 }else {
 
-                    std::cout << "\tLayer " << layerLoop << " doesn't have any hits" << std::endl;                    
+                    std::cout << "---- " << "In layer " << layerLoop << " there are no hits ----" << std::endl;
                     std::vector<HGCSSRecoHit> empty(0);
                     trackVec[trackLoop].hitsByLayer3x3.push_back(empty);
                     //XY
@@ -179,6 +200,7 @@ using namespace std;
                 }
             }
 
+            //Print info to screen
             if (debug_) {
                 std::cout << "Track " << trackLoop << std::endl;
                 std::cout << setw(12) << "x0"  << setw(12) << "y0" << setw(12) << "z0" << setw(12) << "PDG Id" ;
@@ -195,8 +217,9 @@ using namespace std;
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "r" << setw(12) << "rPhi"; 
-                std::cout << setw(12) << "r" << setw(12) << "rPhi" << setw(12) << "r" << setw(12) << "rPhi" << std::endl;
-                
+                std::cout << setw(12) << "r" << setw(12) << "rPhi" << setw(12) << "r" << setw(12) << "rPhi";
+                std::cout << setw(12) << "Layer";
+                std::cout << std::endl;
                 for (unsigned layerLoop(1);layerLoop<nLayers_;layerLoop++) {
                     std::cout << setw(12) << trackVec[trackLoop].truthPositions[layerLoop].X();
                     std::cout << setw(12) << trackVec[trackLoop].truthPositions[layerLoop].Y();
@@ -211,6 +234,7 @@ using namespace std;
                     std::cout << setw(12) << trackVec[trackLoop].energyWeightedrPhi[layerLoop].second;
                     std::cout << setw(12) << trackVec[trackLoop].distsFromHitCentrerPhi[layerLoop].first;
                     std::cout << setw(12) << trackVec[trackLoop].distsFromHitCentrerPhi[layerLoop].second;
+                    std::cout << setw(12) << layerLoop;
                     
                     std::cout << std::endl;
                 }
