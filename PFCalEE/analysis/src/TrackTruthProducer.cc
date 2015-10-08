@@ -111,7 +111,7 @@ using namespace std;
                     if (hitsByLayer_[layerLoop][closestCellIndex].energy() < 2) {
 
                         //Treat hit as empty, fill with dummy info
-                        std::cout << "---- " << "In layer " << layerLoop << " Energy of central hit is < 2 MIPs ----" << std::endl;
+                        if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " Energy of central hit is < 2 MIPs ----" << std::endl;}
                         std::vector<HGCSSRecoHit> empty(0);
                         trackVec[trackLoop].hitsByLayer3x3.push_back(empty);
                         //XY
@@ -183,7 +183,7 @@ using namespace std;
                     }
                 }else {
 
-                    std::cout << "---- " << "In layer " << layerLoop << " there are no hits ----" << std::endl;
+                    if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits ----" << std::endl;}
                     std::vector<HGCSSRecoHit> empty(0);
                     trackVec[trackLoop].hitsByLayer3x3.push_back(empty);
                     //XY

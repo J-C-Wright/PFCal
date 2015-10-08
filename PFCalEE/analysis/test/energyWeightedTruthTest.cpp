@@ -98,8 +98,8 @@ int main(int argc, char** argv){//main
     ("residualMax",    po::value<double>(&residualMax)->default_value(25))
     ("pNevts,n",       po::value<unsigned>(&pNevts)->default_value(0))
     ("filePath,i",     po::value<std::string>(&filePath)->required())
-    ("digifilePath", po::value<std::string>(&digifilePath)->default_value(""))
-    ("nRuns",        po::value<unsigned>(&nRuns)->default_value(0))
+    ("digifilePath",   po::value<std::string>(&digifilePath)->default_value(""))
+    ("nRuns",          po::value<unsigned>(&nRuns)->default_value(0))
     ("simFileName,s",  po::value<std::string>(&simFileName)->required())
     ("recoFileName,r", po::value<std::string>(&recoFileName)->required())
     ("outPath,o",      po::value<std::string>(&outPath)->required())
@@ -286,7 +286,8 @@ int main(int argc, char** argv){//main
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
-    TrackTruthProducer trackTruthProducer(true,nLayers,versionNumber);
+    bool ttpDebug = false;
+    TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     unsigned photonCount(0);
     for (unsigned ievt(0); ievt<nEvts; ++ievt){
 
@@ -354,6 +355,8 @@ int main(int argc, char** argv){//main
         name << "rPhi_{T}-rPhi_{EW}_layer"<< layerLoop;
         histName = name.str(); 
         layerEWrPhiHistos[layerLoop] = new TH2F(histName,histName,50,-10,10,50,-15,15);   
+        
+
 
         errorEWX[layerLoop] = 0;
         errorEWY[layerLoop] = 0;
@@ -455,55 +458,78 @@ int main(int argc, char** argv){//main
     fracNoHitsGraph->Write(); 
     fracAll3x3EnergyGraph->Write(); 
 
+    //Analyze x_t-x_ew vs y_t-y_ew averages
+    TH2F *meanBias = new TH2F("meanBias","meanBias",50,-0.5,0.5,50,-0.5,0.5);
+    Double_t meanBiasX[nLayers];
+    Double_t meanBiasY[nLayers];
+    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
+        std::cout << setw(12) << layerEWXHistos[layerLoop]->GetMean(2);
+        std::cout << setw(12) << layerEWYHistos[layerLoop]->GetMean(2) << std::endl;   
+        meanBiasX[layerLoop] = layerEWXHistos[layerLoop]->GetMean(2);
+        meanBiasY[layerLoop] = layerEWYHistos[layerLoop]->GetMean(2);
+    }
+    TGraph * meanBiasXGraph = new TGraph(numLayers,layerNumbers,meanBiasX);
+    TGraph * meanBiasYGraph = new TGraph(numLayers,layerNumbers,meanBiasY);
+
     TCanvas c1("c1");
     for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
         layerEWXHistos[layerLoop]->Draw();        
-        c1.Print("EWX.gif+20");
+        c1.Print("gifs/EWX.gif+20");
     }
-    c1.Print("EWX.gif++");
+    c1.Print("gifs/EWX.gif++");
 
     c1.Clear();
     for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
         layerEWYHistos[layerLoop]->Draw();
-        c1.Print("EWY.gif+20");
+        c1.Print("gifs/EWY.gif+20");
     }
-    c1.Print("EWY.gif++");
+    c1.Print("gifs/EWY.gif++");
 
     c1.Clear();
     for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
         layerEWrHistos[layerLoop]->Draw();
-        c1.Print("EWr.gif+20");
+        c1.Print("gifs/EWr.gif+20");
     }
-    c1.Print("EWr.gif++");
+    c1.Print("gifs/EWr.gif++");
 
     c1.Clear();
     for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
         layerEWrPhiHistos[layerLoop]->Draw();
-        c1.Print("EWrPhi.gif+20");
+        c1.Print("gifs/EWrPhi.gif+20");
     }
-    c1.Print("EWrPhi.gif++");
+    c1.Print("gifs/EWrPhi.gif++");
 
     c1.Clear();
     for (unsigned segment(0);segment<nPhiSegments;segment++) {
         phiSegmentEWXHistos[segment]->Draw();
         c1.Print("segmentEWX.gif+20");
     }
-    c1.Print("segmentEWX.gif++");
+    c1.Print("gifs/segmentEWX.gif++");
 
     c1.Clear();
     for (unsigned segment(0);segment<nPhiSegments;segment++) {
         phiSegmentEWYHistos[segment]->Draw();
-        c1.Print("segmentEWY.gif+20");
+        c1.Print("gifs/segmentEWY.gif+20");
     }
-    c1.Print("segmentEWY.gif++");
+    c1.Print("gifs/segmentEWY.gif++");
 
     phiSegmentEWXHistos[0]->Draw();
     c1.Print("EWX0.pdf");
     phiSegmentEWXHistos[10]->Draw();
     c1.Print("EWX10.pdf");
 
+    c1.Clear();
+    meanBiasXGraph->SetLineColor(2);
+    meanBiasYGraph->Draw();
+    meanBiasXGraph->SetLineColor(4);
+    meanBiasXGraph->Draw("same");
+    c1.Print("meanBiases.pdf");
+
     outputFile->cd();
 
+    meanBiasXGraph->Write();
+    meanBiasYGraph->Write();
+    meanBias->Write();
     outputFile->Close();
   
     return 0;
