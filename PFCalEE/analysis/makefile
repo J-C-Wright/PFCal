@@ -66,7 +66,7 @@ OBJS=$(subst $(SRCDIR), $(OBJDIR),$(subst cc,$(OBJ_EXT),$(SRCS)))
 #BINS=$(EXEDIR)/maxChargeStudy $(EXEDIR)/plotMomentum $(EXEDIR)/egammaResolution $(EXEDIR)/higgsResolution $(EXEDIR)/ootpuOnHiggsPhotons $(EXEDIR)/getAbsorberWeight
 
 #BINS=$(EXEDIR)/egammaResolution $(EXEDIR)/higgsResolution
-BINS=$(EXEDIR)/egammaResoWithTruth $(EXEDIR)/egammaResolution $(EXEDIR)/hadronResolution $(EXEDIR)/energyWeightedTruthTest
+BINS=$(EXEDIR)/egammaResoWithTruth $(EXEDIR)/egammaResolution $(EXEDIR)/hadronResolution $(EXEDIR)/energyWeightedTruthTest $(EXEDIR)/energyWeightedEdgeStudy
 
 SUBDIRS = ../userlib
 
@@ -116,6 +116,9 @@ $(EXEDIR)/egammaResoWithTruth:  $(TESTDIR)/egammaResoWithTruth.cpp $(LIBDIR)/lib
 	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(LIBDIR) -l$(LIBNAME)
 
 $(EXEDIR)/energyWeightedTruthTest:  $(TESTDIR)/energyWeightedTruthTest.cpp $(LIBDIR)/lib$(LIBNAME).so $(wildcard $(BASEDIR)/include/*.h*)
+	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(LIBDIR) -l$(LIBNAME)
+
+$(EXEDIR)/energyWeightedEdgeStudy:  $(TESTDIR)/energyWeightedEdgeStudy.cpp $(LIBDIR)/lib$(LIBNAME).so $(wildcard $(BASEDIR)/include/*.h*)
 	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(LIBDIR) -l$(LIBNAME)
 
 $(EXEDIR)/vbfResolution:  $(TESTDIR)/vbfResolution.cpp $(LIBDIR)/lib$(LIBNAME).so $(wildcard $(BASEDIR)/include/*.h*)
