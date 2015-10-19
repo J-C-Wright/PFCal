@@ -65,7 +65,8 @@ using namespace std;
 
     void TrackTruthProducer::produce(std::vector<HGCSSGenParticle> *genvec,
                                         std::vector<HGCSSRecoHit> *recoHitVec,
-                                        const HGCSSGeometryConversion & geomConv){
+                                        const HGCSSGeometryConversion & geomConv,
+                                        int mipCut){
         
         //Load hit info
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer_(nLayers_);
@@ -108,7 +109,7 @@ using namespace std;
                         }
                     }     
 
-                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < 2) {
+                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < mipCut) {
 
                         //Treat hit as empty, fill with dummy info
                         if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " Energy of central hit is < 2 MIPs ----" << std::endl;}

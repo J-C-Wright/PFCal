@@ -51,7 +51,8 @@ class TrackTruthProducer{
 
         void produce(std::vector<HGCSSGenParticle> *genvec,
                      std::vector<HGCSSRecoHit> *recoHitVec,
-                     const HGCSSGeometryConversion & geomConv);
+                     const HGCSSGeometryConversion & geomConv,
+                     int mipCut);
 
         ~TrackTruthProducer(){};
 

@@ -302,7 +302,7 @@ int main(int argc, char** argv){//main
 
         if ((*genvec).size() == 1) {
             photonCount++;
-            trackTruthProducer.produce(genvec,rechitvec,geomConv);
+            trackTruthProducer.produce(genvec,rechitvec,geomConv,5);
             tracks.push_back(trackTruthProducer.getTrack(0));
         }else{
             std::cout << "Not a single photon -- Skipping event." << std::endl;
@@ -327,6 +327,8 @@ int main(int argc, char** argv){//main
     Double_t fracNoHits[nLayers];
     Double_t fracAll3x3Energy[nLayers];    
     Double_t layerNumbers[nLayers];
+    Double_t numMoreThan2Mips[nLayers];
+
     for (unsigned i(0);i<nLayers;i++) {layerNumbers[i] = i;}
 
     //Mean energy deposited in each layer
@@ -341,20 +343,20 @@ int main(int argc, char** argv){//main
         //XY
         name << "x_{T}-x_{EW}_layer"<< layerLoop;
         TString histName = name.str(); 
-        layerEWXHistos[layerLoop] = new TH2F(histName,histName,50,-0.5,0.5,50,-5,5);   
+        layerEWXHistos[layerLoop] = new TH2F(histName,histName,40,-0.5,0.5,40,-5,5);   
         name.str(std::string());
         name << "y_{T}-y_{EW}_layer"<< layerLoop;
         histName = name.str(); 
-        layerEWYHistos[layerLoop] = new TH2F(histName,histName,50,-0.5,0.5,50,-5,5);   
+        layerEWYHistos[layerLoop] = new TH2F(histName,histName,40,-0.5,0.5,40,-5,5);   
         //rPhi
         name.str(std::string());
         name << "r_{T}-r_{EW}_layer"<< layerLoop;
         histName = name.str(); 
-        layerEWrHistos[layerLoop] = new TH2F(histName,histName,50,-10,10,50,-10,10);   
+        layerEWrHistos[layerLoop] = new TH2F(histName,histName,40,-10,10,40,-10,10);   
         name.str(std::string());
         name << "rPhi_{T}-rPhi_{EW}_layer"<< layerLoop;
         histName = name.str(); 
-        layerEWrPhiHistos[layerLoop] = new TH2F(histName,histName,50,-10,10,50,-15,15);   
+        layerEWrPhiHistos[layerLoop] = new TH2F(histName,histName,40,-10,10,40,-15,15);   
         
 
 
@@ -363,6 +365,7 @@ int main(int argc, char** argv){//main
         meanNumEmptyIn3x3[layerLoop] = 0;
         fracNoHits[layerLoop] = 0;
         fracAll3x3Energy[layerLoop] = 0;
+        numMoreThan2Mips[nLayers] = 0;
 
         for (unsigned eventLoop(0);eventLoop<tracks.size();eventLoop++) {
 
@@ -377,7 +380,9 @@ int main(int argc, char** argv){//main
                                                 track.truthPositionsrPhi[layerLoop].first - track.energyWeightedrPhi[layerLoop].first);
                 layerEWrPhiHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].second,
                                                    track.truthPositionsrPhi[layerLoop].second - track.energyWeightedrPhi[layerLoop].second);
+                numMoreThan2Mips[layerLoop] += 1.0;
             }
+                
 
             //Error in position by layer
             errorEWX[layerLoop] += track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X();       
@@ -392,6 +397,7 @@ int main(int argc, char** argv){//main
 
         }
 
+        numMoreThan2Mips[layerLoop] /= (float)photonCount;
         errorEWX[layerLoop] /= (float)photonCount;
         errorEWY[layerLoop] /= (float)photonCount;
         meanEnergyDeposited[layerLoop] /= (float)photonCount;
@@ -401,41 +407,33 @@ int main(int argc, char** argv){//main
 
     }
 
-//Phi slice analysis
-    //20 histos distributed in phi
-    unsigned int nPhiSegments(20);
-    float phiSegment = 3.14159/(float)nPhiSegments;
-    float dPhi = 3.141459*10/180;
-    unsigned layerStart(8), layerEnd(15);
-    std::vector<TH2F*> phiSegmentEWXHistos(nPhiSegments);
-    std::vector<TH2F*> phiSegmentEWYHistos(nPhiSegments);
 
-    for (unsigned segment(0);segment<nPhiSegments;segment++) {
-
-        float centralPhi = phiSegment*segment;
-
-        std::ostringstream name;
-        name << "EWX_Segment_" << centralPhi;
-        TString histName = name.str(); 
-        phiSegmentEWXHistos[segment] = new TH2F(histName,histName,50,-0.5,0.5,50,-3,3);   
-
-        name.str(std::string());
-        name << "EWY_Segment_" << centralPhi;
-        histName = name.str(); 
-        phiSegmentEWYHistos[segment] = new TH2F(histName,histName,50,-0.5,0.5,50,-3,3);   
-
-        for (unsigned trackLoop(0);trackLoop<tracks.size();trackLoop++) {
-            TrackTruth track = tracks[trackLoop];       
-            if (track.particleInfo.phi() > centralPhi-dPhi && track.particleInfo.phi() < centralPhi+dPhi) { 
-                for (unsigned layerLoop(layerStart);layerLoop<layerEnd+1;layerLoop++) {
-                    phiSegmentEWXHistos[segment]->Fill(track.distsFromHitCentre[layerLoop].X(),track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X());
-                    phiSegmentEWYHistos[segment]->Fill(track.distsFromHitCentre[layerLoop].Y(),track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y());
-                } 
+    outputFile->cd();
+    //Projections onto y of bias curve in 0.5mm slices
+    std::vector<TGraphErrors*> sliceGraphs(nLayers);
+    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
+        std::vector<TH1D*> sliceSet(20);
+        Double_t means[20];
+        Double_t sigmas[20];
+        Double_t slices[20];
+        Double_t Ex[20];
+        for (unsigned int section(0);section<20;section++) {
+            //std::cout << "Layer: " << layerLoop << " Section: " << section;
+            //std::cout << setw(12)  << layerEWXHistos[layerLoop]->ProjectionY("",section*2,(section+1)*2)->GetEntries() << std::endl;
+            TFitResultPtr r = layerEWXHistos[layerLoop]->ProjectionY("",section*2,(section+1)*2)->Fit("gaus","Q");        
+            if (!r->IsEmpty()) {
+                means[section] = r->Parameter(1);
+                sigmas[section] = r->Parameter(2);
+                std::cout << setw(12) << means[section] << setw(12) << sigmas[section] << std::endl;
+            }else{
+                means[section] = 0;
+                sigmas[section] = 0;
             }
+            slices[section] = (section + 0.5 - 10)/20.0;
         }
-
+        sliceGraphs[layerLoop] = new TGraphErrors(20,slices,means,Ex,sigmas);
+        sliceGraphs[layerLoop]->Write();
     }
-
 
     const Int_t numLayers = nLayers;
     TGraph * errorEWXGraph = new TGraph(numLayers,layerNumbers,errorEWX);
@@ -450,6 +448,8 @@ int main(int argc, char** argv){//main
     fracNoHitsGraph->SetTitle("fracNoHits");
     TGraph * fracAll3x3EnergyGraph = new TGraph(numLayers,layerNumbers,fracAll3x3Energy);
     fracAll3x3EnergyGraph->SetTitle("fracAll3x3Energy");
+    TGraph * numMoreThan2MipsGraph = new TGraph(numLayers,layerNumbers,numMoreThan2Mips);
+    numMoreThan2MipsGraph->SetTitle("Retained per layer (>2MIPs)");
 
     errorEWXGraph->Write(); 
     errorEWYGraph->Write(); 
@@ -500,33 +500,14 @@ int main(int argc, char** argv){//main
     c1.Print("gifs/EWrPhi.gif++");
 
     c1.Clear();
-    for (unsigned segment(0);segment<nPhiSegments;segment++) {
-        phiSegmentEWXHistos[segment]->Draw();
-        c1.Print("segmentEWX.gif+20");
-    }
-    c1.Print("gifs/segmentEWX.gif++");
-
-    c1.Clear();
-    for (unsigned segment(0);segment<nPhiSegments;segment++) {
-        phiSegmentEWYHistos[segment]->Draw();
-        c1.Print("gifs/segmentEWY.gif+20");
-    }
-    c1.Print("gifs/segmentEWY.gif++");
-
-    phiSegmentEWXHistos[0]->Draw();
-    c1.Print("EWX0.pdf");
-    phiSegmentEWXHistos[10]->Draw();
-    c1.Print("EWX10.pdf");
-
-    c1.Clear();
     meanBiasXGraph->SetLineColor(2);
     meanBiasYGraph->Draw();
     meanBiasXGraph->SetLineColor(4);
     meanBiasXGraph->Draw("same");
     c1.Print("meanBiases.pdf");
 
-    outputFile->cd();
 
+    numMoreThan2MipsGraph->Write();
     meanBiasXGraph->Write();
     meanBiasYGraph->Write();
     meanBias->Write();
