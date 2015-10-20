@@ -321,6 +321,7 @@ int main(int argc, char** argv){//main
     std::cout << "There were " << photonCount << " photons" << std::endl;
     std::cout << "Track truth info calculated. Now generating plots" << std::endl;
 
+/*
     std::vector<TH2F*> layerEWXHistos(nLayers);
     std::vector<TH2F*> layerEWYHistos(nLayers);
 
@@ -350,7 +351,7 @@ int main(int argc, char** argv){//main
 
         layerEWXHistos[layerLoop]->Write();
     }
-    
+*/    
     outputFile->Close();
   
     return 0;

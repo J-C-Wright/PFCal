@@ -21,6 +21,7 @@
 #include "Math/Point2Dfwd.h"
 
 struct TrackInfo {
+
     unsigned showerStart;
     Float_t energyWeightedX[28];
     Float_t energyWeightedY[28];
@@ -28,6 +29,8 @@ struct TrackInfo {
     Float_t truthY[28];
     Float_t centralE[28];
     Float_t totalE[28];
+    UInt_t  numHitsInLayer[28];
+
 };
 
 class TrackTruth {
@@ -37,6 +40,7 @@ class TrackTruth {
         std::vector<ROOT::Math::XYPoint> truthPositions_;
         std::vector<ROOT::Math::XYPoint> energyWeightedXY_;
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3_;
+        std::vector<HGCSSRecoHit> centralHitsByLayer_;
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre_;
 
     public:
@@ -46,19 +50,37 @@ class TrackTruth {
         void setEnergyWeightedXY(std::vector<ROOT::Math::XYPoint> energyWeightedXY) {energyWeightedXY_ = energyWeightedXY;}
         void setHitsByLayer(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
         void setDistsFromHitCentre(std::vector<ROOT::Math::XYPoint> distsFromHitCentre) {distsFromHitCentre_ = distsFromHitCentre;}
+        void setCentralHitsByLayer(std::vector<HGCSSRecoHit> centralHitsByLayer) {centralHitsByLayer_ = centralHitsByLayer;}
     //Getters
         //Member vars
         HGCSSGenParticle getParticleInfo() {return particleInfo_;}
         std::vector<ROOT::Math::XYPoint> getTruthPositions() {return truthPositions_;}
         std::vector<ROOT::Math::XYPoint> getEnergyWeightedXY() {return energyWeightedXY_;}
         std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer3x3() {return hitsByLayer3x3_;}
-        std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return DistsFromHitCentre_;}
+        std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return distsFromHitCentre_;}
+        std::vector<HGCSSRecoHit> getCentralHitsByLayer() {return centralHitsByLayer_;}
+
         //Derived
+        ROOT::Math::XYPoint getTruthPosition(unsigned layer) {return truthPositions_[layer];}
+        ROOT::Math::XYPoint getEnergyWeightedXYAtLayer(unsigned layer) {return energyWeightedXY_[layer];}
+        ROOT::Math::XYPoint getDistsFromHitCentreAtLayer(unsigned layer) {return distsFromHitCentre_[layer];}
         unsigned getShowerStart() {
+            unsigned startLayer(9999);
             for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
-                if (energyWeightedXY_[layer].X() != 0 && energyWeightedXY_[layer].Y()) {return layer;}
+                if (energyWeightedXY_[layer].X() != 9999 && energyWeightedXY_[layer].Y() != 9999) {return layer;}
             }
+            return startLayer;
         }
+        unsigned numberOfHitsInLayer(unsigned layer) {return hitsByLayer3x3_[layer].size();}
+        float energyOfCentralHit(unsigned layer) {return centralHitsByLayer_[layer].energy();}
+        float totalEnergyOf3x3Hit(unsigned layer) {
+            float energy(0.0);
+            for (unsigned hit(0);hit<hitsByLayer3x3_[layer].size();hit++)  {
+                energy += hitsByLayer3x3_[layer][hit].energy();
+            }
+            return energy;
+        }
+                    
                 
 };
 

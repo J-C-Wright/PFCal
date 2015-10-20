@@ -284,11 +284,19 @@ int main(int argc, char** argv){//main
     lRecTree->SetBranchAddress("HGCSSRecoHitVec",&rechitvec);
     if (lRecTree->GetBranch("nPuVtx")) lRecTree->SetBranchAddress("nPuVtx",&nPuVtx);
 
+//TTree prep
+    TrackInfo trackStruct;
+    TString treeLeaves;
+    TTree *trackTree = new TTree("tracks","position finding tree");
+    treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
+    trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
+
 //Calculating track truth
     std::vector<TrackTruth> tracks;
     bool ttpDebug = false;
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     unsigned photonCount(0);
+    
     for (unsigned ievt(0); ievt<nEvts; ++ievt){
 
         std::cout << "\n... Processing entry: " << ievt << std::endl;
@@ -304,6 +312,8 @@ int main(int argc, char** argv){//main
             photonCount++;
             trackTruthProducer.produce(genvec,rechitvec,geomConv,5);
             tracks.push_back(trackTruthProducer.getTrack(0));
+            trackStruct = trackTruthProducer.trackStruct(0);
+            trackTree->Fill();
         }else{
             std::cout << "Not a single photon -- Skipping event." << std::endl;
         }
@@ -312,9 +322,27 @@ int main(int argc, char** argv){//main
     std::cout << "There were " << photonCount << " photons" << std::endl;
     std::cout << "Track truth info calculated. Now generating plots" << std::endl;
 
+    outputFile->cd();
+    trackTree->Write();
+
+    outputFile->Close();
+  
+    return 0;
+
+
+
+
+
+
+
+
+
+
+
+
 //Apply restriction in phi here, remove entries in tracks with phi outside range
 
-
+/*
 //Building plots
     std::vector<TH2F*> layerEWXHistos(nLayers);
     std::vector<TH2F*> layerEWYHistos(nLayers);
@@ -511,9 +539,6 @@ int main(int argc, char** argv){//main
     meanBiasXGraph->Write();
     meanBiasYGraph->Write();
     meanBias->Write();
-    outputFile->Close();
-  
-    return 0;
-
+*/
 
 }//main
