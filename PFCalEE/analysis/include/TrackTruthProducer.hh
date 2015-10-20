@@ -20,17 +20,46 @@
 #include "Math/Point2D.h"
 #include "Math/Point2Dfwd.h"
 
-struct TrackTruth {
+struct TrackInfo {
+    unsigned showerStart;
+    Float_t energyWeightedX[28];
+    Float_t energyWeightedY[28];
+    Float_t truthX[28];
+    Float_t truthY[28];
+    Float_t centralE[28];
+    Float_t totalE[28];
+};
 
-    HGCSSGenParticle particleInfo;
-    std::vector<ROOT::Math::XYPoint> truthPositions;
-    std::vector<ROOT::Math::XYPoint> energyWeightedXY;
-    std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3;
-    std::vector<ROOT::Math::XYPoint> distsFromHitCentre;
-    std::vector<std::pair<float,float>> energyWeightedrPhi;
-    std::vector<std::pair<float,float>> truthPositionsrPhi;
-    std::vector<std::pair<float,float>> distsFromHitCentrerPhi;
-    
+class TrackTruth {
+
+    private:
+        HGCSSGenParticle particleInfo_;
+        std::vector<ROOT::Math::XYPoint> truthPositions_;
+        std::vector<ROOT::Math::XYPoint> energyWeightedXY_;
+        std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3_;
+        std::vector<ROOT::Math::XYPoint> distsFromHitCentre_;
+
+    public:
+    //Setters
+        void setParticleInfo(HGCSSGenParticle particleInfo) {particleInfo_ = particleInfo;}
+        void setTruthPositions(std::vector<ROOT::Math::XYPoint> truthPositions) {truthPositions_ = truthPositions;}
+        void setEnergyWeightedXY(std::vector<ROOT::Math::XYPoint> energyWeightedXY) {energyWeightedXY_ = energyWeightedXY;}
+        void setHitsByLayer(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
+        void setDistsFromHitCentre(std::vector<ROOT::Math::XYPoint> distsFromHitCentre) {distsFromHitCentre_ = distsFromHitCentre;}
+    //Getters
+        //Member vars
+        HGCSSGenParticle getParticleInfo() {return particleInfo_;}
+        std::vector<ROOT::Math::XYPoint> getTruthPositions() {return truthPositions_;}
+        std::vector<ROOT::Math::XYPoint> getEnergyWeightedXY() {return energyWeightedXY_;}
+        std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer3x3() {return hitsByLayer3x3_;}
+        std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return DistsFromHitCentre_;}
+        //Derived
+        unsigned getShowerStart() {
+            for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
+                if (energyWeightedXY_[layer].X() != 0 && energyWeightedXY_[layer].Y()) {return layer;}
+            }
+        }
+                
 };
 
 class TrackTruthProducer{
@@ -63,6 +92,8 @@ class TrackTruthProducer{
         std::vector<TrackTruth> getAllTracks() {
             return tracks_;
         };
+
+        TrackInfo trackStruct(unsigned index);
 
         void clear(){
             hitsByLayer_.clear();
