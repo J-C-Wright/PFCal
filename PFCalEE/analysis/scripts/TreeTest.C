@@ -67,47 +67,47 @@
         std::ostringstream name;
         name << "x_{EW}-x_{T}_layer"<< layer;
         TString histName = name.str(); 
-        TH2F *biasCurve = new TH2F(histName,histName,200,-.5,.5,200,-10,-10); 
+        TH2F *biasCurve = new TH2F(histName,histName,200,-.5,.5,200,-5,-5); 
 
         for (unsigned event(0);event<testTree->GetEntries();event++) {
             testTree->GetEntry(event);
             float x_ew = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(layer);
             float x_t  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(layer);
             float x_c  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(5)->GetName())->GetValue(layer);
-            if (x_ew < 9999 && fabs(x_c) <= 0.5) { 
+            if (x_ew < 9999 && fabs(x_c) < 0.5 && fabs(x_ew - x_t) < 5) { 
                 biasCurve->Fill(x_c,x_ew - x_t);
             }
         }
         biasCurveX[layer] = biasCurve;
     }
     std::cout << " done" << std::endl;
-    std::cout << "Making the bias curve (Y)...";
-    TH2F* biasCurveY[28];
+    std::cout << "Making the bias curve (X measured)...";
+    TH2F* biasCurveXM[28];
     for (unsigned layer(0);layer<28;layer++) {
         std::ostringstream name;
-        name << "x_{EW}-x_{T}_layer"<< layer;
+        name << "x_{EW}-x_{T}_XM_layer"<< layer;
         TString histName = name.str(); 
-        TH2F *biasCurve = new TH2F(histName,histName,200,-.5,.5,200,-10,-10); 
+        TH2F *biasCurve = new TH2F(histName,histName,200,-.5,.5,200,-5,-5); 
 
         for (unsigned event(0);event<testTree->GetEntries();event++) {
             testTree->GetEntry(event);
             float x_ew = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(layer);
             float x_t  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(layer);
-            float x_c  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(5)->GetName())->GetValue(layer);
-            if (x_ew < 9999 && fabs(x_c) <= 0.5) { 
-                biasCurve->Fill(x_c,x_ew - x_t);
+            if (x_ew < 9999 && fabs(x_ew) < 5 && fabs(x_ew - x_t) < 5) { 
+                biasCurve->Fill(x_ew,x_ew - x_t);
             }
         }
-        biasCurveY[layer] = biasCurve;
+        biasCurveXM[layer] = biasCurve;
     }
     std::cout << " done" << std::endl;
+
 //Bias by shower start
     TH2F *biasCurveX_SS[28];
     for (unsigned layer(0);layer<28;layer++) {
         std::ostringstream name;
         name << "x_{EW}-x_{T}_layerAfterSS"<< layer;
         TString histName = name.str(); 
-        biasCurveX_SS[layer] = new TH2F(histName,histName,200,-.5,.5,200,-10,-10); 
+        biasCurveX_SS[layer] = new TH2F(histName,histName,200,-.5,.5,200,-5,-5); 
     }
     for (unsigned event(0);event<testTree->GetEntries();event++) {
         testTree->GetEntry(event);
@@ -116,13 +116,11 @@
             float x_ew = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(layer);
             float x_t  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(layer);
             float x_c  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(5)->GetName())->GetValue(layer);
-            if (x_ew < 9999 && fabs(x_c) <= 0.5) { 
+            if (x_ew < 9999 && fabs(x_c) < 0.5 && fabs(x_ew - x_t) < 5) { 
                 biasCurveX_SS[layer-startLayer]->Fill(x_c,x_ew - x_t);
             }
         }
     } 
-        
-
 
 //Bias curve profiles
     std::cout << "Making the bias curve profile (X)...";
@@ -134,7 +132,15 @@
         biasProfileX[layer] = biasCurveX[layer]->ProfileX(histName,1,-1,"s");
     }
     std::cout << " done" << std::endl;
-    outputFile->cd();
+    std::cout << "Making the bias curve profile (X measured)...";
+    TProfile* biasProfileXM[28];
+    for (unsigned layer(0);layer<28;layer++) {
+        std::ostringstream name;
+        name << "x_profile_XM_layer_"<< layer;
+        TString histName = name.str(); 
+        biasProfileXM[layer] = biasCurveXM[layer]->ProfileX(histName,1,-1,"s");
+    }
+    std::cout << " done" << std::endl;
 
 //Superimposed dots and profile
     c1.Clear();
@@ -143,10 +149,10 @@
     for (unsigned layer(0);layer<28;layer++) {
         biasCurveX[layer]->SetOption("COLZ");
         biasCurveX_SS[layer]->SetOption("COLZ");
-        biasCurveY[layer]->SetOption("COLZ");
+        biasCurveXM[layer]->SetOption("COLZ");
         biasCurveX[layer]->SetStats(kFALSE);
         biasCurveX_SS[layer]->SetStats(kFALSE);
-        biasCurveY[layer]->SetStats(kFALSE);
+        biasCurveXM[layer]->SetStats(kFALSE);
     }
 
     biasProfileX[11]->SetLineColor(0);
@@ -159,24 +165,31 @@
     for (unsigned int layer(0);layer<28;layer++) {
         biasProfileX[layer]->SetLineColor(1);
         biasProfileX[layer]->Draw(); 
-        c1.Print("Plots/gifs/BiasProfile.gif+20");
+        c1.Print("Plots/gifs/BiasProfileX.gif+20");
     }
-    c1.Print("Plots/gifs/BiasProfile.gif++");
+    c1.Print("Plots/gifs/BiasProfileX.gif++");
     c1.Clear();
     for (unsigned int layer(0);layer<28;layer++) {
-        c1.cd();
-        biasCurveX[layer]->GetYaxis()->SetRangeUser(-5,5);
+        biasProfileXM[layer]->SetLineColor(1);
+        biasProfileXM[layer]->Draw(); 
+        c1.Print("Plots/gifs/BiasProfileXM.gif+20");
+    }
+    c1.Print("Plots/gifs/BiasProfileXM.gif++");
+    c1.Clear();
+    for (unsigned int layer(0);layer<28;layer++) {
         biasCurveX[layer]->Draw(); 
-        c1.Update();
         c1.Print("Plots/gifs/BiasCurveX.gif+20");
     }
     c1.Print("Plots/gifs/BiasCurveX.gif++");
     c1.Clear();
     for (unsigned int layer(0);layer<28;layer++) {
-        c1.cd();
-        biasCurveX_SS[layer]->GetYaxis()->SetRangeUser(-5,5);
+        biasCurveXM[layer]->Draw(); 
+        c1.Print("Plots/gifs/BiasCurveXM.gif+20");
+    }
+    c1.Print("Plots/gifs/BiasCurveXM.gif++");
+    c1.Clear();
+    for (unsigned int layer(0);layer<28;layer++) {
         biasCurveX_SS[layer]->Draw(); 
-        c1.Update();
         c1.Print("Plots/gifs/BiasCurveX_SS.gif+20");
     }
     c1.Print("Plots/gifs/BiasCurveX_SS.gif++");
@@ -188,11 +201,12 @@
     }
     c1.Print("Plots/gifs/ERatios.gif++");
  
+    outputFile->cd();
     for (unsigned layer(0);layer<28;layer++) {eRatios[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasProfileX[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasCurveX[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasCurveX_SS[layer]->Write();}
-    for (unsigned layer(0);layer<28;layer++) {biasCurveY[layer]->Write();}
+    for (unsigned layer(0);layer<28;layer++) {biasCurveXM[layer]->Write();}
     showerStart->Write();
     eRatioVsLayer->Write();
     outputFile->Close();
