@@ -27,6 +27,8 @@ struct TrackInfo {
     Float_t energyWeightedY[28];
     Float_t truthX[28];
     Float_t truthY[28];
+    Float_t distsFromHitCentreX[28];
+    Float_t distsFromHitCentreY[28];
     Float_t centralE[28];
     Float_t totalE[28];
     UInt_t  numHitsInLayer[28];

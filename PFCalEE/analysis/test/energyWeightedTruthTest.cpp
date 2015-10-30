@@ -288,7 +288,8 @@ int main(int argc, char** argv){//main
     TrackInfo trackStruct;
     TString treeLeaves;
     TTree *trackTree = new TTree("tracks","position finding tree");
-    treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
+    treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:distsFromHitCentreX[28]/F:");
+    treeLeaves += TString("distsFromHitCentreY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
 
 //Calculating track truth

@@ -213,6 +213,8 @@ using namespace std;
             outStruct.centralE[layer] = centralHitsByLayer[layer].energy();
             outStruct.totalE[layer] = tracks_[index].totalEnergyOf3x3Hit(layer);
             outStruct.numHitsInLayer[layer] = tracks_[index].numberOfHitsInLayer(layer);
+            outStruct.distsFromHitCentreX[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).X();
+            outStruct.distsFromHitCentreY[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).Y();
         }
 
         
