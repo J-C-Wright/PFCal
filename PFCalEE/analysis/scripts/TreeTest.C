@@ -201,6 +201,11 @@
     }
     c1.Print("Plots/gifs/ERatios.gif++");
  
+//Curve plots
+    
+
+
+//.root output
     outputFile->cd();
     for (unsigned layer(0);layer<28;layer++) {eRatios[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasProfileX[layer]->Write();}
