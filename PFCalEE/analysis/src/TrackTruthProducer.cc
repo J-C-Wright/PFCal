@@ -96,11 +96,14 @@ using namespace std;
             std::vector<HGCSSRecoHit> centralHitsByLayer(nLayers_);
             std::vector<ROOT::Math::XYPoint> energyWeightedXY(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromHitCentre(nLayers_);
+            std::vector<ROOT::Math::XYPoint> distsFromTileEdges(nLayers_);
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
                 std::vector<HGCSSRecoHit> hit3x3(0);
                 ROOT::Math::XYPoint energyWeightedPoint(9999,9999);
                 ROOT::Math::XYPoint distFromHitCentre(9999,9999);
+                ROOT::Math::XYPoint distsFromTileEdge(9999,9999);
+
                 if (hitsByLayer_[layerLoop].size() != 0) {
 
                     //Find closest hit to truth track
@@ -149,22 +152,44 @@ using namespace std;
                     energyWeightedPoint.SetX(energyWeightedX/totalEnergy);
                     energyWeightedPoint.SetY(energyWeightedY/totalEnergy);
 
+                    //Calculate the displacement of the energy-weighted position from the edges
+                    //X
+                    float positionEdgeX1 = hitsByLayer_[layerLoop][closestCellIndex].get_x() - geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
+                    float positionEdgeX2 = hitsByLayer_[layerLoop][closestCellIndex].get_x() + geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
+                    if (fabs(positionEdgeX1 - energyWeightedPoint.X()) < fabs(positionEdgeX2 - energyWeightedPoint.X())) {
+                        distsFromTileEdge.SetX(energyWeightedPoint.X()-positionEdgeX1);
+                    }else{
+                        distsFromTileEdge.SetX(energyWeightedPoint.X()-positionEdgeX2);
+                    } 
+                    //Y
+                    float positionEdgeY1 = hitsByLayer_[layerLoop][closestCellIndex].get_y() - geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
+                    float positionEdgeY2 = hitsByLayer_[layerLoop][closestCellIndex].get_y() + geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
+                    if (fabs(positionEdgeY1 - energyWeightedPoint.Y()) < fabs(positionEdgeY2 - energyWeightedPoint.Y())) {
+                        distsFromTileEdge.SetY(energyWeightedPoint.Y()-positionEdgeY1);
+                    }else{
+                        distsFromTileEdge.SetY(energyWeightedPoint.Y()-positionEdgeY2);
+                    }    
+                    
+
                 }else {if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}}
 
                 hitsByLayer3x3[layerLoop] = hit3x3;
                 energyWeightedXY[layerLoop] = energyWeightedPoint;
                 distsFromHitCentre[layerLoop] = distFromHitCentre;
+                distsFromTileEdges[layerLoop] = distsFromTileEdge;
 
             }
             //setters
             trackVec[trackLoop].setHitsByLayer(hitsByLayer3x3);
             trackVec[trackLoop].setEnergyWeightedXY(energyWeightedXY);
             trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentre);
+            trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdges);
             trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
 
             //Print info to screen
             if (debug_) {
                 std::cout << "Track " << trackLoop << std::endl;
+                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart() << std::endl;
                 std::cout << setw(12) << "x0"  << setw(12) << "y0" << setw(12) << "z0" << setw(12) << "PDG Id" ;
                 std::cout << setw(12) << "Eta" << setw(12) << "Phi" << std::endl;
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().x();
@@ -176,7 +201,7 @@ using namespace std;
                 std::cout << setw(12) << "Hit locations over " << nLayers_ << " layers" << std::endl;
                 std::cout << setw(24) << "Truth" << setw(24) << "E-Weighted" << setw(24) << "D from centre" << std::endl;
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
-                std::cout << setw(12) << "X" << setw(12) << "Y";
+                std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "Num Hits";
                 std::cout << std::endl;
                 for (unsigned layerLoop(1);layerLoop<nLayers_;layerLoop++) {
@@ -186,6 +211,8 @@ using namespace std;
                     std::cout << setw(12) << trackVec[trackLoop].getEnergyWeightedXYAtLayer(layerLoop).Y();
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromHitCentreAtLayer(layerLoop).X();
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromHitCentreAtLayer(layerLoop).Y();
+                    std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).X();
+                    std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).Y();
                     std::cout << setw(12) << trackVec[trackLoop].numberOfHitsInLayer(layerLoop);
                     std::cout << std::endl;
                 }
@@ -202,6 +229,7 @@ using namespace std;
         std::vector<ROOT::Math::XYPoint> truthPositions = tracks_[index].getTruthPositions();
         std::vector<ROOT::Math::XYPoint> energyWeightedXY = tracks_[index].getEnergyWeightedXY();
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre = tracks_[index].getDistsFromHitCentre();
+        std::vector<ROOT::Math::XYPoint> distsFromTileEdges = tracks_[index].getDistsFromTileEdges();
         std::vector<HGCSSRecoHit> centralHitsByLayer = tracks_[index].getCentralHitsByLayer();
 
         outStruct.showerStart = tracks_[index].getShowerStart();
@@ -215,6 +243,8 @@ using namespace std;
             outStruct.numHitsInLayer[layer] = tracks_[index].numberOfHitsInLayer(layer);
             outStruct.distsFromHitCentreX[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).X();
             outStruct.distsFromHitCentreY[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).Y();
+            outStruct.distsFromTileEdgesX[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).X();
+            outStruct.distsFromTileEdgesY[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).Y();
         }
 
         

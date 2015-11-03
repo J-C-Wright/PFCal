@@ -289,12 +289,12 @@ int main(int argc, char** argv){//main
     TString treeLeaves;
     TTree *trackTree = new TTree("tracks","position finding tree");
     treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:distsFromHitCentreX[28]/F:");
-    treeLeaves += TString("distsFromHitCentreY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
+    treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
-    bool ttpDebug = false;
+    bool ttpDebug = true;
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     unsigned photonCount(0);
     
@@ -321,7 +321,6 @@ int main(int argc, char** argv){//main
         std::cout << "Done!" << std::endl;
     }
     std::cout << "There were " << photonCount << " photons" << std::endl;
-    std::cout << "Track truth info calculated. Now generating plots" << std::endl;
 
     outputFile->cd();
     trackTree->Write();
@@ -331,215 +330,5 @@ int main(int argc, char** argv){//main
     return 0;
 
 
-
-
-
-
-
-
-
-
-
-
-//Apply restriction in phi here, remove entries in tracks with phi outside range
-
-/*
-//Building plots
-    std::vector<TH2F*> layerEWXHistos(nLayers);
-    std::vector<TH2F*> layerEWYHistos(nLayers);
-    std::vector<TH2F*> layerEWrHistos(nLayers);
-    std::vector<TH2F*> layerEWrPhiHistos(nLayers);
-    Double_t errorEWX[nLayers];
-    Double_t errorEWY[nLayers];
-    Double_t meanEnergyDeposited[nLayers];
-    Double_t meanNumEmptyIn3x3[nLayers];
-    Double_t fracNoHits[nLayers];
-    Double_t fracAll3x3Energy[nLayers];    
-    Double_t layerNumbers[nLayers];
-    Double_t numMoreThan2Mips[nLayers];
-
-    for (unsigned i(0);i<nLayers;i++) {layerNumbers[i] = i;}
-
-    //Mean energy deposited in each layer
-    for (unsigned int hitLoop(0);hitLoop<(*rechitvec).size();hitLoop++) {
-        meanEnergyDeposited[(*rechitvec)[hitLoop].layer()] += (*rechitvec)[hitLoop].energy();
-    }
-
-    for (unsigned layerLoop(0);layerLoop<nLayers;layerLoop++) {
-       
-        //Set up histos 
-        std::ostringstream name;
-        //XY
-        name << "x_{T}-x_{EW}_layer"<< layerLoop;
-        TString histName = name.str(); 
-        layerEWXHistos[layerLoop] = new TH2F(histName,histName,40,-0.5,0.5,40,-5,5);   
-        name.str(std::string());
-        name << "y_{T}-y_{EW}_layer"<< layerLoop;
-        histName = name.str(); 
-        layerEWYHistos[layerLoop] = new TH2F(histName,histName,40,-0.5,0.5,40,-5,5);   
-        //rPhi
-        name.str(std::string());
-        name << "r_{T}-r_{EW}_layer"<< layerLoop;
-        histName = name.str(); 
-        layerEWrHistos[layerLoop] = new TH2F(histName,histName,40,-10,10,40,-10,10);   
-        name.str(std::string());
-        name << "rPhi_{T}-rPhi_{EW}_layer"<< layerLoop;
-        histName = name.str(); 
-        layerEWrPhiHistos[layerLoop] = new TH2F(histName,histName,40,-10,10,40,-15,15);   
-        
-
-
-        errorEWX[layerLoop] = 0;
-        errorEWY[layerLoop] = 0;
-        meanNumEmptyIn3x3[layerLoop] = 0;
-        fracNoHits[layerLoop] = 0;
-        fracAll3x3Energy[layerLoop] = 0;
-        numMoreThan2Mips[nLayers] = 0;
-
-        for (unsigned eventLoop(0);eventLoop<tracks.size();eventLoop++) {
-
-            //Truth position vs truth minus energy weighted histos
-            TrackTruth track = tracks[eventLoop];       
-
-            //Check it's not a dummy entry and fill the histos
-            if (track.distsFromHitCentre[layerLoop].X() < 9999 && track.distsFromHitCentre[layerLoop].Y() < 9999) {
-                layerEWXHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].X(),track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X());
-                layerEWYHistos[layerLoop]->Fill(track.distsFromHitCentre[layerLoop].Y(),track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y());
-                layerEWrHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].first,
-                                                track.truthPositionsrPhi[layerLoop].first - track.energyWeightedrPhi[layerLoop].first);
-                layerEWrPhiHistos[layerLoop]->Fill(track.distsFromHitCentrerPhi[layerLoop].second,
-                                                   track.truthPositionsrPhi[layerLoop].second - track.energyWeightedrPhi[layerLoop].second);
-                numMoreThan2Mips[layerLoop] += 1.0;
-            }
-                
-
-            //Error in position by layer
-            errorEWX[layerLoop] += track.truthPositions[layerLoop].X() - track.energyWeightedXY[layerLoop].X();       
-            errorEWY[layerLoop] += track.truthPositions[layerLoop].Y() - track.energyWeightedXY[layerLoop].Y();       
-
-            //Mean number of empty cells
-            meanNumEmptyIn3x3[layerLoop] += 9 - track.hitsByLayer3x3[layerLoop].size();
-            //Fraction no hits
-            if (track.distsFromHitCentre[layerLoop].X() > 9000) {fracNoHits[layerLoop] += 1.0;} 
-            //Fraction where all 9 in the 3x3 have energy
-            if (track.hitsByLayer3x3[layerLoop].size() == 9) {fracAll3x3Energy[layerLoop] += 1.0;}       
-
-        }
-
-        numMoreThan2Mips[layerLoop] /= (float)photonCount;
-        errorEWX[layerLoop] /= (float)photonCount;
-        errorEWY[layerLoop] /= (float)photonCount;
-        meanEnergyDeposited[layerLoop] /= (float)photonCount;
-        meanNumEmptyIn3x3[layerLoop] /= (float)photonCount;
-        fracNoHits[layerLoop] /= (float)photonCount;
-        fracAll3x3Energy[layerLoop] /= (float)photonCount;
-
-    }
-
-
-    outputFile->cd();
-    //Projections onto y of bias curve in 0.5mm slices
-    std::vector<TGraphErrors*> sliceGraphs(nLayers);
-    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
-        std::vector<TH1D*> sliceSet(20);
-        Double_t means[20];
-        Double_t sigmas[20];
-        Double_t slices[20];
-        Double_t Ex[20];
-        for (unsigned int section(0);section<20;section++) {
-            //std::cout << "Layer: " << layerLoop << " Section: " << section;
-            //std::cout << setw(12)  << layerEWXHistos[layerLoop]->ProjectionY("",section*2,(section+1)*2)->GetEntries() << std::endl;
-            TFitResultPtr r = layerEWXHistos[layerLoop]->ProjectionY("",section*2,(section+1)*2)->Fit("gaus","Q");        
-            if (!r->IsEmpty()) {
-                means[section] = r->Parameter(1);
-                sigmas[section] = r->Parameter(2);
-                std::cout << setw(12) << means[section] << setw(12) << sigmas[section] << std::endl;
-            }else{
-                means[section] = 0;
-                sigmas[section] = 0;
-            }
-            slices[section] = (section + 0.5 - 10)/20.0;
-        }
-        sliceGraphs[layerLoop] = new TGraphErrors(20,slices,means,Ex,sigmas);
-        sliceGraphs[layerLoop]->Write();
-    }
-
-    const Int_t numLayers = nLayers;
-    TGraph * errorEWXGraph = new TGraph(numLayers,layerNumbers,errorEWX);
-    errorEWXGraph->SetTitle("errorEWX");
-    TGraph * errorEWYGraph = new TGraph(numLayers,layerNumbers,errorEWY);
-    errorEWYGraph->SetTitle("errorEWY");
-    TGraph * meanEnergyDepositedGraph = new TGraph(numLayers,layerNumbers,meanEnergyDeposited);
-    meanEnergyDepositedGraph->SetTitle("meanEnergyDeposited");
-    TGraph * meanNumEmptyIn3x3Graph = new TGraph(numLayers,layerNumbers,meanNumEmptyIn3x3);
-    meanNumEmptyIn3x3Graph->SetTitle("meanNumEmptyIn3x3");
-    TGraph * fracNoHitsGraph = new TGraph(numLayers,layerNumbers,fracNoHits);
-    fracNoHitsGraph->SetTitle("fracNoHits");
-    TGraph * fracAll3x3EnergyGraph = new TGraph(numLayers,layerNumbers,fracAll3x3Energy);
-    fracAll3x3EnergyGraph->SetTitle("fracAll3x3Energy");
-    TGraph * numMoreThan2MipsGraph = new TGraph(numLayers,layerNumbers,numMoreThan2Mips);
-    numMoreThan2MipsGraph->SetTitle("Retained per layer (>2MIPs)");
-
-    errorEWXGraph->Write(); 
-    errorEWYGraph->Write(); 
-    meanEnergyDepositedGraph->Write(); 
-    meanNumEmptyIn3x3Graph->Write(); 
-    fracNoHitsGraph->Write(); 
-    fracAll3x3EnergyGraph->Write(); 
-
-    //Analyze x_t-x_ew vs y_t-y_ew averages
-    TH2F *meanBias = new TH2F("meanBias","meanBias",50,-0.5,0.5,50,-0.5,0.5);
-    Double_t meanBiasX[nLayers];
-    Double_t meanBiasY[nLayers];
-    for (unsigned int layerLoop(0);layerLoop<nLayers;layerLoop++) {
-        std::cout << setw(12) << layerEWXHistos[layerLoop]->GetMean(2);
-        std::cout << setw(12) << layerEWYHistos[layerLoop]->GetMean(2) << std::endl;   
-        meanBiasX[layerLoop] = layerEWXHistos[layerLoop]->GetMean(2);
-        meanBiasY[layerLoop] = layerEWYHistos[layerLoop]->GetMean(2);
-    }
-    TGraph * meanBiasXGraph = new TGraph(numLayers,layerNumbers,meanBiasX);
-    TGraph * meanBiasYGraph = new TGraph(numLayers,layerNumbers,meanBiasY);
-
-    TCanvas c1("c1");
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerEWXHistos[layerLoop]->Draw();        
-        c1.Print("gifs/EWX.gif+20");
-    }
-    c1.Print("gifs/EWX.gif++");
-
-    c1.Clear();
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerEWYHistos[layerLoop]->Draw();
-        c1.Print("gifs/EWY.gif+20");
-    }
-    c1.Print("gifs/EWY.gif++");
-
-    c1.Clear();
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerEWrHistos[layerLoop]->Draw();
-        c1.Print("gifs/EWr.gif+20");
-    }
-    c1.Print("gifs/EWr.gif++");
-
-    c1.Clear();
-    for (unsigned int layerLoop(1);layerLoop<nLayers;layerLoop++) {
-        layerEWrPhiHistos[layerLoop]->Draw();
-        c1.Print("gifs/EWrPhi.gif+20");
-    }
-    c1.Print("gifs/EWrPhi.gif++");
-
-    c1.Clear();
-    meanBiasXGraph->SetLineColor(2);
-    meanBiasYGraph->Draw();
-    meanBiasXGraph->SetLineColor(4);
-    meanBiasXGraph->Draw("same");
-    c1.Print("meanBiases.pdf");
-
-
-    numMoreThan2MipsGraph->Write();
-    meanBiasXGraph->Write();
-    meanBiasYGraph->Write();
-    meanBias->Write();
-*/
 
 }//main

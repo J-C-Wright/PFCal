@@ -29,6 +29,8 @@ struct TrackInfo {
     Float_t truthY[28];
     Float_t distsFromHitCentreX[28];
     Float_t distsFromHitCentreY[28];
+    Float_t distsFromTileEdgesX[28];
+    Float_t distsFromTileEdgesY[28];
     Float_t centralE[28];
     Float_t totalE[28];
     UInt_t  numHitsInLayer[28];
@@ -44,6 +46,7 @@ class TrackTruth {
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3_;
         std::vector<HGCSSRecoHit> centralHitsByLayer_;
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre_;
+        std::vector<ROOT::Math::XYPoint> distsFromTileEdges_;
 
     public:
     //Setters
@@ -52,6 +55,7 @@ class TrackTruth {
         void setEnergyWeightedXY(std::vector<ROOT::Math::XYPoint> energyWeightedXY) {energyWeightedXY_ = energyWeightedXY;}
         void setHitsByLayer(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
         void setDistsFromHitCentre(std::vector<ROOT::Math::XYPoint> distsFromHitCentre) {distsFromHitCentre_ = distsFromHitCentre;}
+        void setDistsFromTileEdges(std::vector<ROOT::Math::XYPoint> distsFromTileEdges) {distsFromTileEdges_ = distsFromTileEdges;}
         void setCentralHitsByLayer(std::vector<HGCSSRecoHit> centralHitsByLayer) {centralHitsByLayer_ = centralHitsByLayer;}
     //Getters
         //Member vars
@@ -60,12 +64,14 @@ class TrackTruth {
         std::vector<ROOT::Math::XYPoint> getEnergyWeightedXY() {return energyWeightedXY_;}
         std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer3x3() {return hitsByLayer3x3_;}
         std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return distsFromHitCentre_;}
+        std::vector<ROOT::Math::XYPoint> getDistsFromTileEdges() {return distsFromTileEdges_;}
         std::vector<HGCSSRecoHit> getCentralHitsByLayer() {return centralHitsByLayer_;}
 
         //Derived
         ROOT::Math::XYPoint getTruthPosition(unsigned layer) {return truthPositions_[layer];}
         ROOT::Math::XYPoint getEnergyWeightedXYAtLayer(unsigned layer) {return energyWeightedXY_[layer];}
         ROOT::Math::XYPoint getDistsFromHitCentreAtLayer(unsigned layer) {return distsFromHitCentre_[layer];}
+        ROOT::Math::XYPoint getDistsFromTileEdgesAtLayer(unsigned layer) {return distsFromTileEdges_[layer];}
         unsigned getShowerStart() {
             unsigned startLayer(9999);
             for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
