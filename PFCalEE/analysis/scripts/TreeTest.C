@@ -257,10 +257,11 @@
         truePosition->SetOption("COLZ");
         truePosition->SetStats(kFALSE);
 
-        //TF1 *fit   = new TF1("fit","[0]*sin([1]*(x + [2]))*([3]+pow([4]*x,[5]))",-5,5);
-        TF1 *fit   = new TF1("fit","[0] + [1]*x + [2]*pow(x,2) + [3]*pow(x,3) + [4]*pow(x,4)",-5,5);
+        std::cout << "Fitting layer " << layer << std::endl;
+        //TF1 *fit   = new TF1("fit","[0] + [1]*x + [2]*pow(x,2) + [3]*pow(x,3) + [4]*pow(x,4)",-5,5);
+        TF1 *fit   = new TF1("fit","poly10",-5,5);
         biasCurveXM_Edge[layer];
-        fit->SetParameters(1.0,1.0,1.0,1.0,1.0);
+        //fit->SetParameters(0.0,1.0,0.0,0.0,0.0);
         fit->SetLineColor(kRed);
         biasCurveXM_Edge[layer]->Fit(fit);
 
@@ -278,7 +279,6 @@
             float x_e  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(7)->GetName())->GetValue(layer);
             float correction = p0 + p1*x_e + p2*pow(x_e,2) + p3*pow(x_e,3) + p4*pow(x_e,4);
             if (x_ew < 9999 && fabs(x_e) < 5) { 
-                //float correction = p1*sin(p2*(x_e+p3))*(p4+pow(p5*x_e,p6));;
                 corrected->Fill(x_e,x_ew-x_t-correction);
             }
             truePosition->Fill(x_t,x_ew - correction);
@@ -286,13 +286,9 @@
         }
         corrected_XM_Edge[layer] = corrected;
         truePosition_XM_Edge[layer] = truePosition;
-        
     }
 
-
-
 //gifs
-
     c1.Clear();
     for (unsigned int layer(0);layer<28;layer++) {
         biasProfileX[layer]->SetLineColor(1);
