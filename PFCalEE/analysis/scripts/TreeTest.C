@@ -258,10 +258,9 @@
         truePosition->SetStats(kFALSE);
 
         std::cout << "Fitting layer " << layer << std::endl;
-        //TF1 *fit   = new TF1("fit","[0] + [1]*x + [2]*pow(x,2) + [3]*pow(x,3) + [4]*pow(x,4)",-5,5);
-        TF1 *fit   = new TF1("fit","poly10",-5,5);
+        TF1 *fit   = new TF1("fit","[0] + [1]*x + [2]*pow(x,2) + [3]*pow(x,3) + [4]*pow(x,4)",-5,5);
         biasCurveXM_Edge[layer];
-        //fit->SetParameters(0.0,1.0,0.0,0.0,0.0);
+        fit->SetParameters(0.0,1.0,0.0,0.0,0.0);
         fit->SetLineColor(kRed);
         biasCurveXM_Edge[layer]->Fit(fit);
 
@@ -287,6 +286,10 @@
         corrected_XM_Edge[layer] = corrected;
         truePosition_XM_Edge[layer] = truePosition;
     }
+
+//Alternative fit test
+
+
 
 //gifs
     c1.Clear();
