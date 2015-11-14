@@ -1,4 +1,11 @@
-{
+
+Double_t skewNormal(Double_t *x, Double_t *par) {
+    Float_t xx = x[0];
+    Double_t f = (2.0/par[0]) * pow(2*3.14159,-0.5) * TMath::Exp((xx-par[1])/par[0]) * 0.5*(1 + TMath::Erf(pow(2,-0.5)*par[2]*(xx-par[1])/par[0]));
+    return f;
+}
+
+void TreeTest() {
 
     struct TrackInfo {
         int showerStart;                    //0
@@ -216,7 +223,6 @@
     }
     std::cout << " done" << std::endl;
 
-//Superimposed dots and profile
     c1.Clear();
     gStyle->SetPalette(1);
     gStyle->SetNumberContours(250);
@@ -231,13 +237,13 @@
         biasCurveXM_Edge[layer]->SetStats(kFALSE);
     }
 
+//Superimposed dots and profile
     biasProfileX[11]->SetLineColor(0);
     biasCurveX[11]->Draw();
     biasProfileX[11]->Draw("same");
     c1.Print("Plots/superimposeTest.pdf"); 
 
 //Correction
-
     std::cout << "Making the bias curve correction plots (X measured vs dist from edge)...";
     TH2F* corrected_XM_Edge[28];
     TH2F* truePosition_XM_Edge[28];
@@ -258,17 +264,14 @@
         truePosition->SetStats(kFALSE);
 
         std::cout << "Fitting layer " << layer << std::endl;
-        TF1 *fit   = new TF1("fit","[0] + [1]*x + [2]*pow(x,2) + [3]*pow(x,3) + [4]*pow(x,4)",-5,5);
-        biasCurveXM_Edge[layer];
-        fit->SetParameters(0.0,1.0,0.0,0.0,0.0);
+        TF1 *fit   = new TF1("fit","[0]*x + [1]*pow(x,3) + [2]*pow(x,5)",-5,5);
+        fit->SetParameters(1.0,1.0,1.0);
         fit->SetLineColor(kRed);
         biasCurveXM_Edge[layer]->Fit(fit);
 
         float p0 = fit->GetParameter(0);
         float p1 = fit->GetParameter(1);
         float p2 = fit->GetParameter(2);
-        float p3 = fit->GetParameter(3);
-        float p4 = fit->GetParameter(4);
 
         for (unsigned event(0);event<testTree->GetEntries();event++) {
 
@@ -276,7 +279,7 @@
             float x_ew = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(layer);
             float x_t  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(layer);
             float x_e  = testTree->GetBranch("truthInfo")->GetLeaf(leafNames->At(7)->GetName())->GetValue(layer);
-            float correction = p0 + p1*x_e + p2*pow(x_e,2) + p3*pow(x_e,3) + p4*pow(x_e,4);
+            float correction = p0*x_e + p1*pow(x_e,3) + p2*pow(x_e,5);
             if (x_ew < 9999 && fabs(x_e) < 5) { 
                 corrected->Fill(x_e,x_ew-x_t-correction);
             }
@@ -286,12 +289,70 @@
         corrected_XM_Edge[layer] = corrected;
         truePosition_XM_Edge[layer] = truePosition;
     }
+//Alternative fit tests
+//1
+/*
+    layer = 6;
+    TH2F *testBiasCurve = biasCurveXM_Edge[layer];
+    TH1D *slice = testBiasCurve->ProjectionY("proj_24_25",24,25);
+    TF1 *sliceFit = new TF1("skewNormal",-5,5,3);
+    slice->Fit(sliceFit);
+    sliceFit->SetLineColor(kRed);
+    slice->Draw();
+    sliceFit->Draw("same");
+    c1.Print("Plots/slicetest.pdf"); 
+//2
+    TH2F *testBiasCurve = biasCurveXM_Edge[6];
+    TF1 *sliceFit = new TF1("skewNormal",-5,5,3);
+    TObjArray array;
+    testBiasCurve->FitSlicesX(0,20,180,0,"QNR",&array);
+    c1.Clear();
+    array[0]->Draw();
+    c1.Print("Plots/slicetest0.pdf");
+    array[1]->Draw();
+    c1.Print("Plots/slicetest1.pdf");
+    array[2]->Draw();
+    c1.Print("Plots/slicetest2.pdf");
+*/
+//3
+/*
+    TH2F *testBiasCurve = biasCurveXM_Edge[6];
+    TF1 *fit = new TF1("fit","gaus(0)",0,2);    
 
-//Alternative fit test
+    outputFile->cd();
+    unsigned gap = 10;
+    for (unsigned i(0); i+gap<200; i += gap) {
+        std::cout << "Fitting to slice " << i << std::endl;
+        TH1D *slice = testBiasCurve->ProjectionY(Form("%d",i),i,i+gap);
+        slice->Fit(fit);
+        slice->Write();
+    }
+*/  
+
+
+
+
+
+/*
+    TH2F *testBiasCurve = biasCurveXM_Edge[6];
+    TF1 *fit = new TF1("fit","gaus(0)",0,2);    
+    fit->SetParameters(1.0,0.0,1.0);
+    testBiasCurve->FitSlicesX(fit,0,-1,0,"NG10");
+   
+    TString histname = testBiasCurve->GetName();
+ 
+    TH1D * h0 = (TH1D*)gDirectory->Get( histname + "_0");
+    TH1D * h1 = (TH1D*)gDirectory->Get( histname + "_1");
+    TH1D * h2 = (TH1D*)gDirectory->Get( histname + "_2");
+    TH1D * hChi2 = (TH1D*)gDirectory->Get( histname + "_chi2");
+*/
+      
+
 
 
 
 //gifs
+/*
     c1.Clear();
     for (unsigned int layer(0);layer<28;layer++) {
         biasProfileX[layer]->SetLineColor(1);
@@ -356,10 +417,11 @@
         c1.Print("Plots/gifs/truePosition_XM_Edge.gif+20");
     }
     c1.Print("Plots/gifs/truePosition_XM_Edge.gif++");
-        
+*/        
 
 //.root output
-    outputFile->cd();
+    for (unsigned layer(0);layer<28;layer++) {biasCurveXM_Edge[layer]->Write();}
+/*
     for (unsigned layer(0);layer<28;layer++) {eRatios[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {energyTotals[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasProfileX[layer]->Write();}
@@ -368,12 +430,12 @@
     for (unsigned layer(0);layer<28;layer++) {biasCurveX[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasCurveX_SS[layer]->Write();}
     for (unsigned layer(0);layer<28;layer++) {biasCurveXM[layer]->Write();}
-    for (unsigned layer(0);layer<28;layer++) {biasCurveXM_Edge[layer]->Write();}
     showerStart->Write();
     eRatioVsLayer->Write();
     energyTotalVsLayer->Write();
     emptyLayers->Write();
     truePosition->Write();
+*/
     
     outputFile->Close();
 
