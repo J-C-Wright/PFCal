@@ -311,7 +311,7 @@ int main(int argc, char** argv){//main
 
         if ((*genvec).size() == 1) {
             photonCount++;
-            trackTruthProducer.produce(genvec,rechitvec,geomConv,5);
+            trackTruthProducer.produce(genvec,rechitvec,geomConv,2,5);
             tracks.push_back(trackTruthProducer.getTrack(0));
             trackStruct = trackTruthProducer.trackStruct(0);
             trackTree->Fill();

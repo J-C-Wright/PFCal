@@ -66,7 +66,7 @@ using namespace std;
     void TrackTruthProducer::produce(std::vector<HGCSSGenParticle> *genvec,
                                         std::vector<HGCSSRecoHit> *recoHitVec,
                                         const HGCSSGeometryConversion & geomConv,
-                                        int mipCut){
+                                        int mipCut, int centralMipCut){
         
         //Load hit info
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer_(nLayers_);
@@ -104,11 +104,12 @@ using namespace std;
                 ROOT::Math::XYPoint distFromHitCentre(9999,9999);
                 ROOT::Math::XYPoint distsFromTileEdge(9999,9999);
 
+                bool mipCutsPass = false;
+                float closestCellIndex(0);
                 if (hitsByLayer_[layerLoop].size() != 0) {
 
                     //Find closest hit to truth track
                     float distToTruth(9999.);
-                    float closestCellIndex(0);
                     for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
                         float dx = hitsByLayer_[layerLoop][hitLoop].get_x() - trackVec[trackLoop].getTruthPosition(layerLoop).X();
                         float dy = hitsByLayer_[layerLoop][hitLoop].get_y() - trackVec[trackLoop].getTruthPosition(layerLoop).Y();
@@ -118,7 +119,15 @@ using namespace std;
                             closestCellIndex = hitLoop;
                         }
                     }     
-
+                
+                    //Does it pass the central Mip cut?
+                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < centralMipCut) {
+                        std::cout << "Central hit fails the central hit mip cut" << std::endl;
+                    }
+                    mipCutsPass = hitsByLayer_[layerLoop][closestCellIndex].energy() > centralMipCut;
+                }
+                
+                if (mipCutsPass) {
                     //Hit is good, do EW calcs
                     double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
                     double step = geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
@@ -171,7 +180,9 @@ using namespace std;
                     }    
                     
 
-                }else {if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}}
+                }else {
+                    if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}
+                }
 
                 hitsByLayer3x3[layerLoop] = hit3x3;
                 energyWeightedXY[layerLoop] = energyWeightedPoint;

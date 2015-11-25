@@ -311,7 +311,7 @@ int main(int argc, char** argv){//main
 
         if (include){
             photonCount++;
-            trackTruthProducer.produce(genvec,rechitvec,geomConv,5);
+            trackTruthProducer.produce(genvec,rechitvec,geomConv,2,5);
             tracks.push_back(trackTruthProducer.getTrack(0));
         }else{
             std::cout << "Not a single photon, or not in edge range -- Skipping event." << std::endl;

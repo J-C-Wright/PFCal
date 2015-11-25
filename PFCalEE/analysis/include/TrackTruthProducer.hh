@@ -108,10 +108,10 @@ class TrackTruthProducer{
                             unsigned nLayers, 
                             unsigned versionNumber );
 
-        void produce(std::vector<HGCSSGenParticle> *genvec,
-                     std::vector<HGCSSRecoHit> *recoHitVec,
-                     const HGCSSGeometryConversion & geomConv,
-                     int mipCut);
+        void produce( std::vector<HGCSSGenParticle> *genvec,
+                      std::vector<HGCSSRecoHit> *recoHitVec,
+                      const HGCSSGeometryConversion & geomConv,
+                      int mipCut, int centralMipCut );
 
         ~TrackTruthProducer(){};
 
