@@ -72,13 +72,6 @@ class TrackTruth {
         ROOT::Math::XYPoint getEnergyWeightedXYAtLayer(unsigned layer) {return energyWeightedXY_[layer];}
         ROOT::Math::XYPoint getDistsFromHitCentreAtLayer(unsigned layer) {return distsFromHitCentre_[layer];}
         ROOT::Math::XYPoint getDistsFromTileEdgesAtLayer(unsigned layer) {return distsFromTileEdges_[layer];}
-        unsigned getShowerStart() {
-            unsigned startLayer(9999);
-            for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
-                if (energyWeightedXY_[layer].X() != 9999 && energyWeightedXY_[layer].Y() != 9999) {return layer;}
-            }
-            return startLayer;
-        }
         unsigned numberOfHitsInLayer(unsigned layer) {return hitsByLayer3x3_[layer].size();}
         float energyOfCentralHit(unsigned layer) {return centralHitsByLayer_[layer].energy();}
         float totalEnergyOf3x3Hit(unsigned layer) {
@@ -88,8 +81,29 @@ class TrackTruth {
             }
             return energy;
         }
-                    
-                
+
+        
+        unsigned getShowerStart(float cut) {
+            std::vector<float> energies;
+            for (unsigned layer(0);layer<28;layer++) {energies.push_back( totalEnergyOf3x3Hit(layer) );}
+            unsigned maxE = *std::max_element(energies.begin(),energies.end());
+            for (unsigned layer(0);layer<28;layer++) {
+                if (energies[layer]/maxE > cut) {return layer;}
+            } 
+            return 0;
+        } 
+
+
+            
+/*                
+        unsigned getShowerStart() {
+            unsigned startLayer(9999);
+            for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
+                if (energyWeightedXY_[layer].X() != 9999 && energyWeightedXY_[layer].Y() != 9999) {return layer;}
+            }
+            return startLayer;
+        }
+*/
 };
 
 class TrackTruthProducer{

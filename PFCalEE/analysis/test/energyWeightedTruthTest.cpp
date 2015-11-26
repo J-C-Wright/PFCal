@@ -294,7 +294,7 @@ int main(int argc, char** argv){//main
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
-    bool ttpDebug = false;
+    bool ttpDebug = true;
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     unsigned photonCount(0);
     

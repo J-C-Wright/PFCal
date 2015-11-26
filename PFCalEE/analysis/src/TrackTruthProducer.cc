@@ -122,7 +122,7 @@ using namespace std;
                 
                     //Does it pass the central Mip cut?
                     if (hitsByLayer_[layerLoop][closestCellIndex].energy() < centralMipCut) {
-                        std::cout << "Central hit fails the central hit mip cut" << std::endl;
+                        std::cout << "Layer " << layerLoop << " Central hit fails the central hit mip cut" << std::endl;
                     }
                     mipCutsPass = hitsByLayer_[layerLoop][closestCellIndex].energy() > centralMipCut;
                 }
@@ -200,7 +200,7 @@ using namespace std;
             //Print info to screen
             if (debug_) {
                 std::cout << "Track " << trackLoop << std::endl;
-                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart() << std::endl;
+                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
                 std::cout << setw(12) << "x0"  << setw(12) << "y0" << setw(12) << "z0" << setw(12) << "PDG Id" ;
                 std::cout << setw(12) << "Eta" << setw(12) << "Phi" << std::endl;
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().x();
@@ -213,7 +213,7 @@ using namespace std;
                 std::cout << setw(24) << "Truth" << setw(24) << "E-Weighted" << setw(24) << "D from centre" << std::endl;
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
-                std::cout << setw(12) << "Num Hits";
+                std::cout << setw(12) << "Num Hits" << setw(12) << "Layer";
                 std::cout << std::endl;
                 for (unsigned layerLoop(1);layerLoop<nLayers_;layerLoop++) {
                     std::cout << setw(12) << trackVec[trackLoop].getTruthPosition(layerLoop).X();
@@ -225,9 +225,10 @@ using namespace std;
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).X();
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).Y();
                     std::cout << setw(12) << trackVec[trackLoop].numberOfHitsInLayer(layerLoop);
+                    std::cout << setw(12) << layerLoop;
                     std::cout << std::endl;
                 }
-                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart() << std::endl;
+                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
             }
         }
         tracks_ = trackVec;
@@ -243,7 +244,7 @@ using namespace std;
         std::vector<ROOT::Math::XYPoint> distsFromTileEdges = tracks_[index].getDistsFromTileEdges();
         std::vector<HGCSSRecoHit> centralHitsByLayer = tracks_[index].getCentralHitsByLayer();
 
-        outStruct.showerStart = tracks_[index].getShowerStart();
+        outStruct.showerStart = tracks_[index].getShowerStart(0.1);
         for (unsigned layer(0);layer<28;layer++) {
             outStruct.truthX[layer] = truthPositions[layer].X();
             outStruct.truthY[layer] = truthPositions[layer].Y();

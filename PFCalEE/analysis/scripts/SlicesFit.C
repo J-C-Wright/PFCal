@@ -4,7 +4,7 @@ void SlicesFit() {
 
     float eRatioCut(1.0);
    
-    TFile *file = TFile::Open("out.root"); 
+    TFile *file = TFile::Open("out_2Mip_5Mip.root"); 
     TFile *outputFile = new TFile("Plots/Plots.root","RECREATE");
     outputFile->cd();
 
