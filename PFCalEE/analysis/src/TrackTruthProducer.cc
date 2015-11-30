@@ -98,7 +98,7 @@
 
                 double posz = lHit.get_z();
                 //get z position of hits
-                if (layerZPositions_[layer]<posz) layerZPositions_[layer]=posz;
+                if (layerZPositions_[layer]<posz || layerZPositions_[layer] == 0) layerZPositions_[layer]=posz;
             }
         }
 
