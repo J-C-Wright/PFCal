@@ -57,6 +57,8 @@ OBJS=$(subst $(SRCDIR), $(OBJDIR),$(subst cc,$(OBJ_EXT),$(SRCS)))
 
 #BINS=$(EXEDIR)/MixPUSignal $(EXEDIR)/egammaResolution $(EXEDIR)/higgsResolution $(EXEDIR)/timeResolution $(EXEDIR)/plotMomentum $(EXEDIR)/plotTime
 
+#BINS=$(EXEDIR)/dumpHitRates
+
 #BINS=$(EXEDIR)/plotParticleDensity $(EXEDIR)/validation $(EXEDIR)/timeResolution $(EXEDIR)/hepmcHggChargedTracks
 
 #BINS=$(EXEDIR)/mipStudy $(EXEDIR)/mipProfile $(EXEDIR)/mipSelection $(EXEDIR)/ootpuOnHiggsPhotons $(EXEDIR)/higgsResolution $(EXEDIR)/plotNabove100fC
@@ -84,6 +86,9 @@ $(SUBDIRS):
 
 $(EXEDIR)/plotMomentum:  $(TESTDIR)/plotMomentum.cpp $(wildcard $(BASEDIR)/include/*.h*)
 	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(HEPMC_DIR)lib -lHepMC #-lHepMCfio
+
+$(EXEDIR)/dumpHitRates:  $(TESTDIR)/dumpHitRates.cpp $(LIBDIR)/lib$(LIBNAME).so $(wildcard $(BASEDIR)/include/*.h*)
+	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(LIBDIR) -l$(LIBNAME)
 
 $(EXEDIR)/hepmcHggChargedTracks:  $(TESTDIR)/hepmcHggChargedTracks.cpp $(wildcard $(BASEDIR)/include/*.h*)
 	$(CXX) -o $@ $(CXXFLAGS) $< $(LIBS) -L$(HEPMC_DIR)lib -lHepMC #-lHepMCfio

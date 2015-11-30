@@ -62,10 +62,11 @@ DetectorConstruction::DetectorConstruction(G4int ver, G4int mod,
 	break;
       }
 
-    case v_HGCALEE_TB:
+    case v_HGCALEE_TB: case v_HGCALEE_TB_gap0: case v_HGCALEE_TB_allW: case v_HGCALEE_TB_samedEdx:
       {
 	G4cout << "[DetectorConstruction] starting v_HGCAL for testbeam"<< G4endl;
 	G4double airThick = 3*mm;
+	if(version_ == v_HGCALEE_TB_gap0) airThick = 0*mm;
 	G4double pcbThick = 2*mm;
 
 	std::vector<G4double> lThickL;
@@ -81,32 +82,62 @@ DetectorConstruction::DetectorConstruction(G4int ver, G4int mod,
 	lThickL.push_back(0.1*mm);lEleL.push_back("Si");
 	lThickL.push_back(0.1*mm);lEleL.push_back("Si");
 
+	if (version_ == v_HGCALEE_TB_samedEdx) lThickL[2] = 2.8*mm;
+
 	std::vector<G4double> lThickR;
 	std::vector<std::string> lEleR;
-	lThickR.push_back(0.6*mm);lEleR.push_back("WCu");
-	lThickR.push_back(6*mm);lEleR.push_back("Cu");
-	lThickR.push_back(0.6*mm);lEleR.push_back("WCu");
+	if(version_ != v_HGCALEE_TB_allW){
+	  lThickR.push_back(0.6*mm);lEleR.push_back("WCu");
+	  lThickR.push_back(6*mm);lEleR.push_back("Cu");
+	  lThickR.push_back(0.6*mm);lEleR.push_back("WCu");
+	} else {
+	  lThickR.push_back(0.5*mm);lEleR.push_back("Cu");
+	  lThickR.push_back(2.*mm);lEleR.push_back("W");
+	  lThickR.push_back(0.5*mm);lEleR.push_back("Cu");
+	}
 	lThickR.push_back(0.1*mm);lEleR.push_back("Si");
 	lThickR.push_back(0.1*mm);lEleR.push_back("Si");
 	lThickR.push_back(0.1*mm);lEleR.push_back("Si");
 	lThickR.push_back(pcbThick);lEleR.push_back("PCB");
 	lThickR.push_back(airThick);lEleR.push_back("Air");
+	if (version_ == v_HGCALEE_TB_samedEdx) {
+	  lThickR[0] = 0*mm;
+	  lThickR[2] = 0*mm;
+	}
 
 	for(unsigned i=0; i<5; i++) {
 	  m_caloStruct.push_back( SamplingSection(lThickL,lEleL) );
 	  m_caloStruct.push_back( SamplingSection(lThickR,lEleR) );
 	}
 	lThickL[2] = 2.8*mm;
-	lThickR[0] = 1.2*mm;
-	lThickR[2] = 1.2*mm;
- 	for(unsigned i=0; i<5; i++) {
+	if (version_ == v_HGCALEE_TB_samedEdx) lThickL[2] = 3.7*mm;
+	if(version_ != v_HGCALEE_TB_allW){
+	  lThickR[0] = 1.2*mm;
+	  lThickR[2] = 1.2*mm;
+	} else {
+	  lThickR[1] = 2.8*mm;
+	}
+ 	if (version_ == v_HGCALEE_TB_samedEdx) {
+	  lThickR[0] = 0.5*mm;
+	  lThickR[2] = 0.5*mm;
+	}
+	for(unsigned i=0; i<5; i++) {
 	  m_caloStruct.push_back( SamplingSection(lThickL,lEleL) );
 	  m_caloStruct.push_back( SamplingSection(lThickR,lEleR) );
 	}
 	lThickL[2] = 4.2*mm;
-	lThickR[0] = 2.2*mm;
-	lThickR[2] = 2.2*mm;
-  	for(unsigned i=0; i<4; i++) {
+	if (version_ == v_HGCALEE_TB_samedEdx) lThickL[2] = 5.3*mm;
+	if(version_ != v_HGCALEE_TB_allW){
+	  lThickR[0] = 2.2*mm;
+	  lThickR[2] = 2.2*mm;
+	} else {
+	  lThickR[1] = 4.2*mm;
+	}
+ 	if (version_ == v_HGCALEE_TB_samedEdx) {
+	  lThickR[0] = 1.4*mm;
+	  lThickR[2] = 1.4*mm;
+	}
+ 	for(unsigned i=0; i<4; i++) {
 	  m_caloStruct.push_back( SamplingSection(lThickL,lEleL) );
 	  m_caloStruct.push_back( SamplingSection(lThickR,lEleR) );
 	}
@@ -1004,7 +1035,11 @@ void DetectorConstruction::fillInterSectorSpace(const unsigned sectorNum,
 }//fill intersector space
 
 G4double DetectorConstruction::getCrackOffset(size_t layer){
-  if (m_nSectors>1) return static_cast<unsigned>(layer/10.)*static_cast<unsigned>(m_sectorWidth/30.)*10;
+  //model with 3 cracks identical by block of 10 layers
+  //if (m_nSectors>1) return static_cast<unsigned>(layer/10.)*static_cast<unsigned>(m_sectorWidth/30.)*10;
+  //with cracks shifted systematically layer-to-layer
+  if (m_nSectors>1) return 10*((7*layer)%31);
+
   return 0;
 }
 
