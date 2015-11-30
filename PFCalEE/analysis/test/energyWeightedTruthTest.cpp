@@ -214,6 +214,7 @@ int main(int argc, char** argv){//main
 
   //extract input energy
 
+
   std::cout << " -- Version number is : " << versionNumber 
 	    << ", model = " << model
 	    << ", cellSize = " << cellSize
@@ -295,7 +296,14 @@ int main(int argc, char** argv){//main
 //Calculating track truth
     std::vector<TrackTruth> tracks;
     bool ttpDebug = true;
+
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
+    if (!trackTruthProducer.layersZsLoaded()) {
+        std::cout << "Generating Z positions" << std::endl;
+        trackTruthProducer.getZpositions(versionNumber, lSimTree, nEvts, nSiLayers);
+    }
+
+
     unsigned photonCount(0);
     
     for (unsigned ievt(0); ievt<nEvts; ++ievt){

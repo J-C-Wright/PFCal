@@ -20,6 +20,8 @@
 #include "Math/Point2D.h"
 #include "Math/Point2Dfwd.h"
 
+using namespace std;
+
 struct TrackInfo {
 
     unsigned showerStart;
@@ -122,6 +124,11 @@ class TrackTruthProducer{
                             unsigned nLayers, 
                             unsigned versionNumber );
 
+        void getZpositions(const unsigned versionNumber,
+                           TTree *aSimTree,
+                           const unsigned nEvts,
+                           const unsigned numSiLayers);
+
         void produce( std::vector<HGCSSGenParticle> *genvec,
                       std::vector<HGCSSRecoHit> *recoHitVec,
                       const HGCSSGeometryConversion & geomConv,
@@ -143,5 +150,7 @@ class TrackTruthProducer{
             hitsByLayer_.clear();
             tracks_.clear();
         };
+
+        bool layersZsLoaded() {return layerZsLoaded_;};
 
 };

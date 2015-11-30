@@ -23,9 +23,6 @@
 #include "Math/Vector3Dfwd.h"
 #include "Math/Point2D.h"
 #include "Math/Point2Dfwd.h"
-#include "MyFunctions.h"
-
-using namespace std;
 
     TrackTruthProducer::TrackTruthProducer(bool debug, 
                                            unsigned nLayers, 
@@ -42,25 +39,77 @@ using namespace std;
         if (!inputFile.is_open()){
             std::cout << "Can't open input file " << inputFileName.str() << std::endl;
             layerZsLoaded_ = false;
+        }else{
+            while (!inputFile.eof()) {
+                unsigned l=nLayers_;
+                double z=0;
+                inputFile >> l >> z;
+                if (l < nLayers_) {
+                    layerZPositions_.push_back(z);
+                    if (debug_) {std::cout << "Layer " << l << ", z = " << z << std::endl;}
+                }
+            }
+            if (layerZPositions_.size() != nLayers_) {
+                std::cout << "Warning! Problem in extracting z positions, did not find one value per layer. Please check input file: ";
+                std::cout << inputFileName.str() << std::endl;
+                layerZsLoaded_ = false;
+                return;
+            }
+            inputFile.close();
+            layerZsLoaded_ = true;
         }
-        while (!inputFile.eof()) {
-            unsigned l=nLayers_;
-            double z=0;
-            inputFile >> l >> z;
-            if (l < nLayers_) {
-                layerZPositions_.push_back(z);
-                if (debug_) {std::cout << "Layer " << l << ", z = " << z << std::endl;}
+    }
+
+    void TrackTruthProducer::getZpositions(const unsigned versionNumber,
+                                           TTree *aSimTree,
+                                           const unsigned nEvts,
+                                           const unsigned numSiLayers){
+
+        std::vector<HGCSSSimHit> * simhitvec = 0;
+        aSimTree->SetBranchAddress("HGCSSSimHitVec",&simhitvec);
+
+        std::ofstream fout;
+        std::ostringstream foutname;
+        foutname << "data/zPositions_v" << versionNumber << ".dat";
+        fout.open(foutname.str());
+        if (!fout.is_open()){
+            std::cout << " Cannot open outfile " << foutname.str() << " for writing ! Exiting..." << std::endl;
+            exit(1);
+        }
+
+        std::cout << "--- Filling z positions:" << std::endl
+        << "- Processing = " << nEvts  << " events out of " << aSimTree->GetEntries() << std::endl;
+
+        layerZPositions_.resize(nLayers_,0);
+
+        for (unsigned ievt(0); ievt<nEvts; ++ievt){//loop on entries
+            if (debug_) std::cout << "... Processing entry: " << ievt << " (Layer location)" << std::endl;
+            else if (ievt%50 == 0) std::cout << "... Processing entry: " << ievt << " (Layer location)" << std::endl;
+            aSimTree->GetEntry(ievt);
+            for (unsigned iH(0); iH<(*simhitvec).size(); ++iH){//loop on rechits
+                const HGCSSSimHit & lHit = (*simhitvec)[iH];
+                unsigned layer = lHit.layer();
+                if (layer >= nLayers_) {
+                continue;
+                }
+
+                //discard some si layers...
+                if (lHit.silayer() >= numSiLayers) continue; 
+
+                double posz = lHit.get_z();
+                //get z position of hits
+                if (layerZPositions_[layer]<posz) layerZPositions_[layer]=posz;
             }
         }
-        if (layerZPositions_.size() != nLayers_) {
-            std::cout << "Warning! Problem in extracting z positions, did not find one value per layer. Please check input file: ";
-            std::cout << inputFileName.str() << std::endl;
-            layerZsLoaded_ = false;
-            return;
+
+        std::cout << " --- Z positions of layers: " << std::endl;
+        for (unsigned iL(0); iL<nLayers_;++iL){
+            std::cout << " Layer " << iL << ", z = " << layerZPositions_[iL] << std::endl;
+            fout << iL << " " << layerZPositions_[iL] << std::endl;
         }
-        inputFile.close();
+
+        fout.close();
         layerZsLoaded_ = true;
-   
     }
 
     void TrackTruthProducer::produce(std::vector<HGCSSGenParticle> *genvec,
