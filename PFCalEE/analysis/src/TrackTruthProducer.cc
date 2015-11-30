@@ -106,6 +106,7 @@
         for (unsigned iL(0); iL<nLayers_;++iL){
             std::cout << " Layer " << iL << ", z = " << layerZPositions_[iL] << std::endl;
             fout << iL << " " << layerZPositions_[iL] << std::endl;
+
         }
 
         fout.close();
