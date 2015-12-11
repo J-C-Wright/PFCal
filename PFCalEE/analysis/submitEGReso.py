@@ -37,9 +37,9 @@ label=''
 #label='v5_24_'
 #label='v5_18_'
 
-workdir='/afs/cern.ch/work/a/amagnan/PFCalEEAna/'
+workdir='/afs/cern.ch/work/j/jwright/public/'
 
-enlist=[0]
+enlist=[20]
 if opt.dogun : 
     #enlist=[3,5,7,10,20,30,40,50,60,70,80,90,100,125,150,175,200]
     #enlist=[3,5,10,30,50,70,100,200]
