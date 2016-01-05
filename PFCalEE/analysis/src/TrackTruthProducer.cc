@@ -180,7 +180,7 @@
                 if (mipCutsPass) {
                     //Hit is good, do EW calcs
                     double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
-                    double step = geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
+                    double step = sqrt(3.0)*geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
 
                     //Calculate the distance from the truth to the centre of the closest cell
                     //XY
@@ -260,7 +260,7 @@
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().eta();
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().phi() << std::endl;
                 std::cout << setw(12) << "Hit locations over " << nLayers_ << " layers" << std::endl;
-                std::cout << setw(24) << "Truth" << setw(24) << "E-Weighted" << setw(24) << "D from centre" << std::endl;
+                std::cout << setw(24) << "Truth" << setw(24) << "E-Weighted" << setw(24) << "D from centre" << setw(24) << "D from edge" << std::endl;
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "X" << setw(12) << "Y" << setw(12) << "X" << setw(12) << "Y";
                 std::cout << setw(12) << "Num Hits" << setw(12) << "Layer";
