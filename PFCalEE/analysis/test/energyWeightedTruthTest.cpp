@@ -129,6 +129,9 @@ int main(int argc, char** argv){//main
 	    << " -- Number cells in signal region for fit: " << nSR << " cells" << std::endl
 	    << " -- Residual max considered for filling matrix and fitting: " << residualMax << " mm" << std::endl
 	    << " -- Apply PUMix fix? " << applyPuMixFix << std::endl
+        << " -- Number of runs " << nRuns << std::endl
+        << " -- Sim filename "  << simFileName  << std::endl
+        << " -- Reco filename " << recoFileName << std::endl
 	    << " -- Processing ";
   if (pNevts == 0) std::cout << "all events." << std::endl;
   else std::cout << pNevts << " events." << std::endl;
@@ -147,8 +150,6 @@ int main(int argc, char** argv){//main
     inputrec << filePath << "/" << recoFileName;
   else 
     inputrec << digifilePath << "/" << recoFileName;
-
-  //std::cout << inputsim.str() << " " << inputrec.str() << std::endl;
 
   HGCSSInfo * info;
 
@@ -170,8 +171,12 @@ int main(int argc, char** argv){//main
   }
   else {
     for (unsigned i(0);i<nRuns;++i){
+
       std::ostringstream lstr;
-      lstr << inputsim.str() << "_run" << i << ".root";
+//    lstr << inputsim.str() << "_run" << i << ".root";
+      lstr << filePath << "run_" << i << "/" << simFileName << "_run" << i << ".root";
+      std::cout << "\n\n" << lstr.str() << "\n\n";
+
       if (testInputFile(lstr.str(),simFile)){  
         if (simFile) info =(HGCSSInfo*)simFile->Get("Info");
         else {
@@ -182,7 +187,9 @@ int main(int argc, char** argv){//main
       else continue;
       lSimTree->AddFile(lstr.str().c_str());
       lstr.str("");
-      lstr << inputrec.str() << "_run" << i << ".root";
+//      lstr << inputrec.str() << "_run" << i << ".root";
+      lstr << filePath << "run_" << i << "/" << recoFileName << "_run" << i << ".root";
+
       if (!testInputFile(lstr.str(),recFile)) continue;
       lRecTree->AddFile(lstr.str().c_str());
     }
@@ -233,7 +240,7 @@ int main(int argc, char** argv){//main
 	    << " -- N sections = " << nSections << std::endl;
 
 
-  HGCSSGeometryConversion geomConv(inFilePath,model,cellSize);
+  HGCSSGeometryConversion geomConv(model,cellSize);
   //set granularity to get cellsize for PU subtraction
   std::vector<unsigned> granularity;
   granularity.resize(nLayers,4);

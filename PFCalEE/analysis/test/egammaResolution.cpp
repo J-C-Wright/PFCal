@@ -231,7 +231,7 @@ int main(int argc, char** argv){//main
 	    << " -- N sections = " << nSections << std::endl;
 
 
-  HGCSSGeometryConversion geomConv(inFilePath,model,cellSize);
+  HGCSSGeometryConversion geomConv(model,cellSize);
   //set granularity to get cellsize for PU subtraction
   std::vector<unsigned> granularity;
   granularity.resize(nLayers,4);
