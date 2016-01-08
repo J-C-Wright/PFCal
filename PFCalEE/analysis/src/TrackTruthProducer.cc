@@ -8,6 +8,7 @@
 #include "HGCSSGenParticle.hh"
 #include "HGCSSRecoHit.hh"
 #include "TrackTruthProducer.hh"
+#include "HexagonalGeometry.hh"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -181,6 +182,23 @@
                     //Hit is good, do EW calcs
                     double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
                     double step = sqrt(3.0)*geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
+
+                    //TESTING HEX CLASS
+                    std::cout << "\n\nTesting the hexagon class...\n";
+
+                    ROOT::Math::XYPoint centre(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
+                    Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), true, centre);
+                    std::pair<unsigned,unsigned> nearestEdges    = tile.getNearestEdges_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
+                    std::pair<float,float> distanceToEdges = tile.getDistanceToEdges_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
+                    std::pair<float,float> displacementFromCentre = tile.getDisplacementFromCentre_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
+
+                    std::cout << setw(24) << "Tile Centre"        << setw(12) << centre.X() << setw(12) << centre.Y() << std::endl;
+                    std::cout << setw(24) << "Hit Location"       << setw(12) << trackVec[trackLoop].getTruthPosition(layerLoop).X();
+                    std::cout << setw(12) << trackVec[trackLoop].getTruthPosition(layerLoop).Y() << std::endl;
+                    std::cout << setw(24) << "Hit nearest Edges"  << setw(12) << nearestEdges.first << setw(12) << nearestEdges.second << std::endl;
+                    std::cout << setw(24) << "Hit dist to edges"  << setw(12) << distanceToEdges.first << setw(12) << distanceToEdges.second << std::endl;
+                    std::cout << setw(24) << "Hit dist to centre" << setw(12) << displacementFromCentre.first << setw(12) << displacementFromCentre.second << std::endl;
+
 
                     //Calculate the distance from the truth to the centre of the closest cell
                     //XY
