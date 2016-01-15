@@ -8,7 +8,7 @@
 #include "HGCSSGenParticle.hh"
 #include "HGCSSRecoHit.hh"
 #include "TrackTruthProducer.hh"
-#include "HexagonalGeometry.hh"
+//#include "HexagonalGeometry.hh"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -132,28 +132,51 @@
             
             //Calculate the trackposition truth
             trackVec[trackLoop].setParticleInfo( (*genvec)[trackLoop] ); 
+
             std::vector<ROOT::Math::XYPoint> truthPositions;
+            std::vector<UVWPoint> truthPositionsUVW;
+
             for (unsigned int layer(0);layer<nLayers_;layer++) {
                 double x = trackVec[trackLoop].getParticleInfo().x() 
                             + (layerZPositions_[layer]-trackVec[trackLoop].getParticleInfo().z())*((*genvec)[trackLoop].px())/((*genvec)[trackLoop].pz());
                 double y = trackVec[trackLoop].getParticleInfo().y() 
                             + (layerZPositions_[layer]-trackVec[trackLoop].getParticleInfo().z())*((*genvec)[trackLoop].py())/((*genvec)[trackLoop].pz());
+
                 truthPositions.push_back(ROOT::Math::XYPoint(x,y));
+                UVWPoint uvwPoint(ROOT::Math::XYPoint(x,y));
+                truthPositionsUVW.push_back(uvwPoint);
+
             }
+
             trackVec[trackLoop].setTruthPositions(truthPositions);
+            trackVec[trackLoop].setTruthPositionsUVW(truthPositionsUVW);
 
             //Energy-weighted positions, hits,  and position within cell
             std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3(nLayers_);
             std::vector<HGCSSRecoHit> centralHitsByLayer(nLayers_);
+
+            //XY
             std::vector<ROOT::Math::XYPoint> energyWeightedXY(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromHitCentre(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromTileEdges(nLayers_);
+            //UVW
+            std::vector<UVWPoint> energyWeightedUVW(nLayers_);
+            std::vector<UVWPoint> distsFromHitCentreUVW(nLayers_);
+            std::vector<std::vector<float>> distsFromTileEdgesUVW(nLayers_);
+
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
                 std::vector<HGCSSRecoHit> hit3x3(0);
-                ROOT::Math::XYPoint energyWeightedPoint(9999,9999);
-                ROOT::Math::XYPoint distFromHitCentre(9999,9999);
-                ROOT::Math::XYPoint distsFromTileEdge(9999,9999);
+                ROOT::Math::XYPoint dummy(9999,9999);
+                //XY
+                ROOT::Math::XYPoint energyWeightedPoint = dummy;
+                ROOT::Math::XYPoint distFromHitCentre   = dummy;
+                ROOT::Math::XYPoint distFromTileEdge   = dummy;
+                //UVW
+                UVWPoint energyWeightedPointUVW(dummy);
+                UVWPoint distFromHitCentreUVW(dummy);
+                std::vector<float> distFromTileEdgeUVW(3,9999);
+
 
                 bool mipCutsPass = false;
                 float closestCellIndex(0);
@@ -172,10 +195,11 @@
                     }     
                 
                     //Does it pass the central Mip cut?
-                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < centralMipCut) {
+                    mipCutsPass = hitsByLayer_[layerLoop][closestCellIndex].energy() > centralMipCut;
+                    if (!mipCutsPass && debug_) {
                         std::cout << "Layer " << layerLoop << " Central hit fails the central hit mip cut" << std::endl;
                     }
-                    mipCutsPass = hitsByLayer_[layerLoop][closestCellIndex].energy() > centralMipCut;
+
                 }
                 
                 if (mipCutsPass) {
@@ -183,33 +207,8 @@
                     double radialDisplacement = sqrt(pow(hitsByLayer_[layerLoop][closestCellIndex].get_x(),2)+pow(hitsByLayer_[layerLoop][closestCellIndex].get_y(),2));
                     double step = sqrt(3.0)*geomConv.cellSize(layerLoop,radialDisplacement)+0.1;
 
-                    //TESTING HEX CLASS
-                    std::cout << "\n\nTesting the hexagon class...\n";
-
-                    ROOT::Math::XYPoint centre(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
-                    Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), true, centre);
-                    std::pair<unsigned,unsigned> nearestEdges    = tile.getNearestEdges_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
-                    std::pair<float,float> distanceToEdges = tile.getDistanceToEdges_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
-                    std::pair<float,float> displacementFromCentre = tile.getDisplacementFromCentre_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
-
-                    std::cout << setw(24) << "Tile Centre"        << setw(12) << centre.X() << setw(12) << centre.Y() << std::endl;
-                    std::cout << setw(24) << "Hit Location"       << setw(12) << trackVec[trackLoop].getTruthPosition(layerLoop).X();
-                    std::cout << setw(12) << trackVec[trackLoop].getTruthPosition(layerLoop).Y() << std::endl;
-                    std::cout << setw(24) << "Hit nearest Edges"  << setw(12) << nearestEdges.first << setw(12) << nearestEdges.second << std::endl;
-                    std::cout << setw(24) << "Hit dist to edges"  << setw(12) << distanceToEdges.first << setw(12) << distanceToEdges.second << std::endl;
-                    std::cout << setw(24) << "Hit dist to centre" << setw(12) << displacementFromCentre.first << setw(12) << displacementFromCentre.second << std::endl;
-
-
                     //Calculate the distance from the truth to the centre of the closest cell
-                    //XY
-                    float dx = (trackVec[trackLoop].getTruthPosition(layerLoop).X()
-                                                - hitsByLayer_[layerLoop][closestCellIndex].get_x())/geomConv.cellSize(layerLoop,radialDisplacement);
-                    float dy = (trackVec[trackLoop].getTruthPosition(layerLoop).Y()
-                                                - hitsByLayer_[layerLoop][closestCellIndex].get_y())/geomConv.cellSize(layerLoop,radialDisplacement);
-                    distFromHitCentre.SetX(dx);
-                    distFromHitCentre.SetY(dy);
-
-                    //find the hits that belong to the 3x3 grid centred on the closest
+                    //find the hits that belong to the heptad centred on the closest
                     for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
                         if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step &&
                             fabs(hitsByLayer_[layerLoop][hitLoop].get_y() - hitsByLayer_[layerLoop][closestCellIndex].get_y() ) < step) {
@@ -217,6 +216,7 @@
                         }
                     } 
                     centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
+
                     //Calculate energy-weighted position
                     //XY position
                     double energyWeightedX(0.0), energyWeightedY(0.0);
@@ -229,41 +229,51 @@
                     energyWeightedPoint.SetX(energyWeightedX/totalEnergy);
                     energyWeightedPoint.SetY(energyWeightedY/totalEnergy);
 
-                    //Calculate the displacement of the energy-weighted position from the edges
-                    //X
-                    float positionEdgeX1 = hitsByLayer_[layerLoop][closestCellIndex].get_x() - geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
-                    float positionEdgeX2 = hitsByLayer_[layerLoop][closestCellIndex].get_x() + geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
-                    if (fabs(positionEdgeX1 - energyWeightedPoint.X()) < fabs(positionEdgeX2 - energyWeightedPoint.X())) {
-                        distsFromTileEdge.SetX(energyWeightedPoint.X()-positionEdgeX1);
-                    }else{
-                        distsFromTileEdge.SetX(energyWeightedPoint.X()-positionEdgeX2);
-                    } 
-                    //Y
-                    float positionEdgeY1 = hitsByLayer_[layerLoop][closestCellIndex].get_y() - geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
-                    float positionEdgeY2 = hitsByLayer_[layerLoop][closestCellIndex].get_y() + geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
-                    if (fabs(positionEdgeY1 - energyWeightedPoint.Y()) < fabs(positionEdgeY2 - energyWeightedPoint.Y())) {
-                        distsFromTileEdge.SetY(energyWeightedPoint.Y()-positionEdgeY1);
-                    }else{
-                        distsFromTileEdge.SetY(energyWeightedPoint.Y()-positionEdgeY2);
-                    }    
+                    //Make hexagon object for hex geometry stuff
+                    ROOT::Math::XYPoint centre(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
+                    Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), true, centre);
+
+                    //Set energy-weighted position from centre
+                    std::pair<float,float> displacementFromCentre = tile.getDisplacementFromCentre_XY( energyWeightedPoint );
+                    distFromHitCentre.SetX(displacementFromCentre.first);
+                    distFromHitCentre.SetY(displacementFromCentre.second);
+
+                    //Set energy-weighted position from edge
+                    std::pair<float,float> distanceToEdges_EWP = tile.getDistanceToEdges_XY(energyWeightedPoint); 
+                    distFromTileEdge.SetX(distanceToEdges_EWP.first);
+                    distFromTileEdge.SetY(distanceToEdges_EWP.second);
                     
+                    //UVW Conversions
+                    energyWeightedPointUVW.setUVW(energyWeightedPoint);
+                    distFromHitCentreUVW.setUVW(distFromHitCentre);
+                    distFromTileEdgeUVW = tile.getDistanceToEdges_UVW(distFromHitCentre);
 
                 }else {
                     if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}
                 }
 
                 hitsByLayer3x3[layerLoop] = hit3x3;
-                energyWeightedXY[layerLoop] = energyWeightedPoint;
+                //XY
+                energyWeightedXY[layerLoop]   = energyWeightedPoint;
                 distsFromHitCentre[layerLoop] = distFromHitCentre;
-                distsFromTileEdges[layerLoop] = distsFromTileEdge;
+                distsFromTileEdges[layerLoop] = distFromTileEdge;
+                //UVW
+                energyWeightedUVW[layerLoop]     = energyWeightedPointUVW;
+                distsFromHitCentreUVW[layerLoop] = distFromHitCentreUVW;
+                distsFromTileEdgesUVW[layerLoop] = distFromTileEdgeUVW; 
 
             }
             //setters
             trackVec[trackLoop].setHitsByLayer(hitsByLayer3x3);
+            trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
+            //XY
             trackVec[trackLoop].setEnergyWeightedXY(energyWeightedXY);
             trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentre);
             trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdges);
-            trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
+            //UVW
+            trackVec[trackLoop].setEnergyWeightedUVW(energyWeightedUVW);
+            trackVec[trackLoop].setDistsFromHitCentreUVW(distsFromHitCentreUVW);
+            trackVec[trackLoop].setDistsFromTileEdgesUVW(distsFromTileEdgesUVW);
 
             //Print info to screen
             if (debug_) {
@@ -325,9 +335,41 @@
             outStruct.distsFromHitCentreY[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).Y();
             outStruct.distsFromTileEdgesX[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).X();
             outStruct.distsFromTileEdgesY[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).Y();
+            //UVW
+            outStruct.energyWeightedU[layer] = tracks_[index].getEnergyWeightedUVWAtLayer(layer).getU();
+            outStruct.energyWeightedV[layer] = tracks_[index].getEnergyWeightedUVWAtLayer(layer).getV();
+            outStruct.energyWeightedW[layer] = tracks_[index].getEnergyWeightedUVWAtLayer(layer).getW();
+            outStruct.truthU[layer] = tracks_[index].getTruthPositionUVWAtLayer(layer).getU();
+            outStruct.truthV[layer] = tracks_[index].getTruthPositionUVWAtLayer(layer).getV();
+            outStruct.truthW[layer] = tracks_[index].getTruthPositionUVWAtLayer(layer).getW();
+            outStruct.distsFromHitCentreU[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getU();
+            outStruct.distsFromHitCentreV[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getV();
+            outStruct.distsFromHitCentreW[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getW();
+            outStruct.distsFromHitCentreUPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getUPerp();
+            outStruct.distsFromHitCentreVPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getVPerp();
+            outStruct.distsFromHitCentreWPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getWPerp();
         }
-
         
         return outStruct;
     }
+/*
+    UVWPoint getTruthPositionUVWAtLayer(unsigned layer) {return truthPositionsUVW_[layer];}
+    UVWPoint getEnergyWeightedUVWAtLayer(unsigned layer) {return energyWeightedUVW_[layer];}
+    UVWPoint getDistsFromHitCentreUVWAtLayer(unsigned layer) {return distsFromHitCentreUVW_[layer];}
+    std::vector<float> getDistsFromTileEdgesUVWAtLayer(unsigned layer) {return distsFromTileEdgesUVW_[layer];}
+
+    Float_t energyWeightedU[28];
+    Float_t energyWeightedV[28];
+    Float_t energyWeightedW[28];
+    Float_t truthU[28];
+    Float_t truthV[28];
+    Float_t truthW[28];
+    Float_t distsFromHitCentreU[28];
+    Float_t distsFromHitCentreV[28];
+    Float_t distsFromHitCentreW[28];
+    Float_t distsFromHitCentreUPerp[28];
+    Float_t distsFromHitCentreVPerp[28];
+    Float_t distsFromHitCentreWPerp[28];
+*/
+
 

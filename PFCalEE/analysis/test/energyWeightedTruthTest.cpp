@@ -297,12 +297,29 @@ int main(int argc, char** argv){//main
     TString treeLeaves;
     TTree *trackTree = new TTree("tracks","position finding tree");
     treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:distsFromHitCentreX[28]/F:");
-    treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
+    treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I:");
+    treeLeaves += TString("energyWeightedU[28]/F:energyWeightedV[28]/F:energyWeightedW[28]/F:truthU[28]/F:truthV[28]/F:truthW[28]/F:");
+    treeLeaves += TString("distsFromHitCentreU[28]/F:distsFromHitCentreV[28]/F:distsFromHitCentreW[28]/F:");
+    treeLeaves += TString("distsFromHitCentreUPerp[28]/F:distsFromHitCentreVPerp[28]/F:distsFromHitCentreWPerp[28]/F");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
+    /*
+    Float_t energyWeightedU[28];
+    Float_t energyWeightedV[28];
+    Float_t energyWeightedW[28];
+    Float_t truthU[28];
+    Float_t truthV[28];
+    Float_t truthW[28];
+    Float_t distsFromHitCentreU[28];
+    Float_t distsFromHitCentreV[28];
+    Float_t distsFromHitCentreW[28];
+    Float_t distsFromHitCentreUPerp[28];
+    Float_t distsFromHitCentreVPerp[28];
+    Float_t distsFromHitCentreWPerp[28];
+    */
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
-    bool ttpDebug = true;
+    bool ttpDebug = false;
 
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     if (!trackTruthProducer.layersZsLoaded()) {
