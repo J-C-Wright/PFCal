@@ -290,12 +290,14 @@ int main(int argc, char** argv){//main
     TString treeLeaves;
     TTree *trackTree = new TTree("tracks","position finding tree");
     treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:distsFromHitCentreX[28]/F:");
-    treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I");
+    treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I:");
+    treeLeaves += TString("aAdjacentCut[28]/B:bAdjacentCut[28]/B:cAdjacentCut[28]/B:dAdjacentCut[28]/B:");
+    treeLeaves += TString("truthDistsFromEdgeX[28]/F:truthDistsFromEdgeY[28]/F");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
-    bool ttpDebug = true;
+    bool ttpDebug = false;
 
     TrackTruthProducer trackTruthProducer(ttpDebug,nLayers,versionNumber);
     if (!trackTruthProducer.layersZsLoaded()) {
@@ -308,25 +310,21 @@ int main(int argc, char** argv){//main
     
     for (unsigned ievt(0); ievt<nEvts; ++ievt){
 
-        std::cout << "\n... Processing entry: " << ievt << std::endl;
-        std::cout << "Reading info from trees... ";
+        if (ievt%50 == 0) {std::cout << "\n... Processing entry: " << ievt;}
 
         lSimTree->GetEntry(ievt);
         lRecTree->GetEntry(ievt);
 
-        std::cout << "Done!" << std::endl;
-        std::cout << "Producing... " << std::endl;
-
         if ((*genvec).size() == 1) {
             photonCount++;
-            trackTruthProducer.produce(genvec,rechitvec,geomConv,2,5);
+            trackTruthProducer.produce(genvec,rechitvec,geomConv,0.5,5.0,2.0);
             tracks.push_back(trackTruthProducer.getTrack(0));
             trackStruct = trackTruthProducer.trackStruct(0);
             trackTree->Fill();
         }else{
-            std::cout << "Not a single photon -- Skipping event." << std::endl;
+            if (ievt%50 == 0) {std::cout << " Not a single photon -- Skipping event." << std::endl;}
         }
-        std::cout << "Done!" << std::endl;
+        if (ievt%50 == 0) {std::cout << " ...Done!" << std::endl;}
     }
     std::cout << "There were " << photonCount << " photons" << std::endl;
 

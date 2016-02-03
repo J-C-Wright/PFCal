@@ -36,6 +36,12 @@ struct TrackInfo {
     Float_t centralE[28];
     Float_t totalE[28];
     UInt_t  numHitsInLayer[28];
+    Bool_t  aAdjacentCut[28];
+    Bool_t  bAdjacentCut[28];
+    Bool_t  cAdjacentCut[28];
+    Bool_t  dAdjacentCut[28];
+    Float_t truthDistsFromEdgeX[28];
+    Float_t truthDistsFromEdgeY[28];
 
 };
 
@@ -44,33 +50,41 @@ class TrackTruth {
     private:
         HGCSSGenParticle particleInfo_;
         std::vector<ROOT::Math::XYPoint> truthPositions_;
+        std::vector<ROOT::Math::XYPoint> truthDistsFromEdge_;
         std::vector<ROOT::Math::XYPoint> energyWeightedXY_;
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3_;
         std::vector<HGCSSRecoHit> centralHitsByLayer_;
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre_;
         std::vector<ROOT::Math::XYPoint> distsFromTileEdges_;
+        std::vector<std::vector<bool>> adjacentCutsStatus_;
 
     public:
     //Setters
         void setParticleInfo(HGCSSGenParticle particleInfo) {particleInfo_ = particleInfo;}
         void setTruthPositions(std::vector<ROOT::Math::XYPoint> truthPositions) {truthPositions_ = truthPositions;}
+        void setTruthDistsFromEdge(std::vector<ROOT::Math::XYPoint> truthDistsFromEdge) {truthDistsFromEdge_ = truthDistsFromEdge;}
         void setEnergyWeightedXY(std::vector<ROOT::Math::XYPoint> energyWeightedXY) {energyWeightedXY_ = energyWeightedXY;}
         void setHitsByLayer(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
         void setDistsFromHitCentre(std::vector<ROOT::Math::XYPoint> distsFromHitCentre) {distsFromHitCentre_ = distsFromHitCentre;}
         void setDistsFromTileEdges(std::vector<ROOT::Math::XYPoint> distsFromTileEdges) {distsFromTileEdges_ = distsFromTileEdges;}
         void setCentralHitsByLayer(std::vector<HGCSSRecoHit> centralHitsByLayer) {centralHitsByLayer_ = centralHitsByLayer;}
+        void setAdjacentCutsStatus(std::vector<std::vector<bool>> adjacentCutsStatus) {adjacentCutsStatus_ = adjacentCutsStatus;}
+
     //Getters
         //Member vars
         HGCSSGenParticle getParticleInfo() {return particleInfo_;}
         std::vector<ROOT::Math::XYPoint> getTruthPositions() {return truthPositions_;}
+        std::vector<ROOT::Math::XYPoint> getTruthDistsFromEdge() {return truthDistsFromEdge_;}
         std::vector<ROOT::Math::XYPoint> getEnergyWeightedXY() {return energyWeightedXY_;}
         std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer3x3() {return hitsByLayer3x3_;}
         std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return distsFromHitCentre_;}
         std::vector<ROOT::Math::XYPoint> getDistsFromTileEdges() {return distsFromTileEdges_;}
         std::vector<HGCSSRecoHit> getCentralHitsByLayer() {return centralHitsByLayer_;}
+        std::vector<std::vector<bool>> getAdjacentCutsStatus() {return adjacentCutsStatus_;}
 
         //Derived
         ROOT::Math::XYPoint getTruthPosition(unsigned layer) {return truthPositions_[layer];}
+        ROOT::Math::XYPoint getTruthDistFromEdge(unsigned layer) {return truthDistsFromEdge_[layer];}
         ROOT::Math::XYPoint getEnergyWeightedXYAtLayer(unsigned layer) {return energyWeightedXY_[layer];}
         ROOT::Math::XYPoint getDistsFromHitCentreAtLayer(unsigned layer) {return distsFromHitCentre_[layer];}
         ROOT::Math::XYPoint getDistsFromTileEdgesAtLayer(unsigned layer) {return distsFromTileEdges_[layer];}
@@ -84,7 +98,7 @@ class TrackTruth {
             return energy;
         }
 
-        
+/*                
         unsigned getShowerStart(float cut) {
             std::vector<float> energies;
             for (unsigned layer(0);layer<28;layer++) {energies.push_back( totalEnergyOf3x3Hit(layer) );}
@@ -94,18 +108,15 @@ class TrackTruth {
             } 
             return 0;
         } 
-
-
+*/
             
-/*                
         unsigned getShowerStart() {
             unsigned startLayer(9999);
             for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {
-                if (energyWeightedXY_[layer].X() != 9999 && energyWeightedXY_[layer].Y() != 9999) {return layer;}
+                if ( hitsByLayer3x3_[layer].size() != 0 ) {return layer;}
             }
             return startLayer;
         }
-*/
 };
 
 class TrackTruthProducer{
@@ -132,7 +143,7 @@ class TrackTruthProducer{
         void produce( std::vector<HGCSSGenParticle> *genvec,
                       std::vector<HGCSSRecoHit> *recoHitVec,
                       const HGCSSGeometryConversion & geomConv,
-                      int mipCut, int centralMipCut );
+                      float mipCut, float centralMipCut, float adjacentMipCut );
 
         ~TrackTruthProducer(){};
 

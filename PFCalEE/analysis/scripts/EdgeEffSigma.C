@@ -1,13 +1,23 @@
 #include <vector>
+#include <fstream>
 
-void SlicesFitSS() {
+void EdgeEffSigma() {
 
     gROOT->ProcessLine(".L scripts/effSigmaMacro.C");
 
     float eRatioCut(1.0);
    
-    TFile *file = TFile::Open("out_V100.root"); 
-    TFile *outputFile = new TFile("Plots_Squares/Plots.root","RECREATE");
+    TFile *file = TFile::Open("out.root"); 
+
+    int startLayer(2);
+
+    std::ostringstream fileName;
+    fileName << "scripts/EffSigmaSquares/EffSigma_LS" << startLayer << ".csv";
+    string name = fileName.str();
+    ofstream effsigma;
+    effsigma.open(name.c_str());
+
+    TFile *outputFile = new TFile(Form("Plots_Squares/Plots_L%d.root",startLayer),"RECREATE");
     outputFile->cd();
 
     TrackInfo test;
@@ -15,6 +25,11 @@ void SlicesFitSS() {
     TTree *tree = (TTree*)file->Get("tracks");
     tree->SetBranchAddress("truthInfo",&test.showerStart);
     TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
+
+    for (unsigned i(0);i<5;i++) {
+        std::cout << setw(12) << getNumberStartingAtLayer(tree,i);
+        std::cout << " start at layer " << i << std::endl;
+    }
 
     //Bias curves
     TH2F* layerBiases[28];
@@ -88,22 +103,9 @@ void SlicesFitSS() {
         projectionBias[layer] = layerBiases[layer]->ProjectionY();
 
         //Correction in range
-        projectionCorrEdge[layer] = getCorrectedSliceProjection(layer, 100, tree, -1.0, 1.0, layerFits[layer]);
-        projectionBiasEdge[layer] = getBiasedSliceProjection(layer, 100, tree, -1.0, 1.0);
+        projectionCorrEdge[layer] = getCorrectedSliceProjection(layer, 100, tree, -1.0, 1.0, layerFits[layer],startLayer);
+        projectionBiasEdge[layer] = getBiasedSliceProjection(layer, 100, tree, -1.0, 1.0, startLayer);
 
-        //Projections onto Y about the edge
-        //Bias vs Eratio between -5 and -4
-        layerBiasVsEratio[layer] =  getBiasVsEratio(layer, 100, tree,-5.0,-4.0);
-
-        layerBiases[layer]->Write();
-        layerCurve[layer]->Write();
-        layerFits[layer]->Write();
-        layerCorrection[layer]->Write();
-        projectionCorr[layer]->Write();
-        projectionBias[layer]->Write();
-        projectionCorrEdge[layer]->Write();
-        projectionBiasEdge[layer]->Write();
-        layerBiasVsEratio[layer]->Write();
     }
 
     Double_t effSigmaBiasEdge[28];
@@ -114,13 +116,64 @@ void SlicesFitSS() {
         effSigmaBiasEdge[layer] = effSigmaMacro(projectionBiasEdge[layer]);
         effSigmaCorrEdge[layer] = effSigmaMacro(projectionCorrEdge[layer]);
     }
-   
+    
+    //Make pdfs of the projection Bias Edge histos
+    projectionBiasEdge[0]->Draw();
+    c1.Print("ProjDistsBiased.pdf(");
+    for (unsigned layer(1);layer<28;layer++) {
+        projectionBiasEdge[layer]->Draw();
+        c1.Print("ProjDistsBiased.pdf");
+    }
+    c1.Print("ProjDistsBiased.pdf)");
+
+    //Make pdfs of the projection Corrected Edge histos
+    projectionCorrEdge[0]->Draw();
+    c1.Print("ProjDistsCorrected.pdf(");
+    for (unsigned layer(1);layer<28;layer++) {
+        projectionCorrEdge[layer]->Draw();
+        c1.Print("ProjDistsCorrected.pdf");
+    }
+    c1.Print("ProjDistsCorrected.pdf)");
+
+    for (unsigned layer(0);layer<28;layer++) {
+        effsigma << effSigmaBiasEdge[layer] << ",";
+        effsigma << effSigmaCorrEdge[layer] << ",";
+        effsigma << layerNumbers[layer] << ",";
+        effsigma << std::endl;
+
+        std::cout << setw(12) << effSigmaBiasEdge[layer];
+        std::cout << setw(12) << effSigmaCorrEdge[layer];
+        std::cout << setw(12) << layerNumbers[layer];
+        std::cout << std::endl;
+    }
+    effsigma.close();
 
     outputFile->Close();
 }
 
 
-TH1F* getCorrectedSliceProjection(unsigned layer, unsigned numBins, TTree* tree, float min, float max, TF1 *fit) {
+unsigned getNumberStartingAtLayer(TTree* tree, unsigned startingLayer) {
+
+    TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
+    unsigned count(0);
+
+    for (unsigned event(0);event<tree->GetEntries();event++) {
+        tree->GetEntry(event);
+        unsigned start = (unsigned)tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(0)->GetName())->GetValue();
+        if (start == startingLayer) count++;
+    }
+
+    return count;
+}
+        
+    
+
+
+
+
+
+
+TH1F* getCorrectedSliceProjection(unsigned layer, unsigned numBins, TTree* tree, float min, float max, TF1 *fit, int startPick) {
     
     TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
     std::ostringstream name;
@@ -131,6 +184,7 @@ TH1F* getCorrectedSliceProjection(unsigned layer, unsigned numBins, TTree* tree,
     for (unsigned event(0);event<tree->GetEntries();event++) {
         tree->GetEntry(event);
         int start  = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(0)->GetName())->GetValue();
+        if (start != startPick && startPick >= 0) continue;
         if (start + layer > 27) continue;
         float x_ew = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(start + layer);
         float x_t  = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(start + layer);
@@ -144,7 +198,7 @@ TH1F* getCorrectedSliceProjection(unsigned layer, unsigned numBins, TTree* tree,
 }
 
 
-TH1F* getBiasedSliceProjection(unsigned layer, unsigned numBins, TTree* tree, float min, float max) {
+TH1F* getBiasedSliceProjection(unsigned layer, unsigned numBins, TTree* tree, float min, float max, int startPick) {
     
     TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
     std::ostringstream name;
@@ -155,6 +209,7 @@ TH1F* getBiasedSliceProjection(unsigned layer, unsigned numBins, TTree* tree, fl
     for (unsigned event(0);event<tree->GetEntries();event++) {
         tree->GetEntry(event);
         int start  = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(0)->GetName())->GetValue();
+        if (start != startPick && startPick >= 0) continue;
         if (start + layer > 27) continue;
         float x_ew = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(1)->GetName())->GetValue(start + layer);
         float x_t  = tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(3)->GetName())->GetValue(start + layer);
@@ -197,7 +252,7 @@ TH2F* getBiasCurve(unsigned layer, unsigned numBins, TTree* tree, float eRatioCu
 } 
 
 
-TH2F* getBiasVsEratio(unsigned layer, unsigned numBins, TTree* tree, float sliceMin,float  sliceMax) {
+TH2F* getBiasVsEratio(unsigned layer, unsigned numBins, TTree* tree, float sliceMin, float sliceMax) {
     
     TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
     std::ostringstream name;

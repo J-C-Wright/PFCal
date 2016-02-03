@@ -116,7 +116,7 @@
     void TrackTruthProducer::produce(std::vector<HGCSSGenParticle> *genvec,
                                         std::vector<HGCSSRecoHit> *recoHitVec,
                                         const HGCSSGeometryConversion & geomConv,
-                                        int mipCut, int centralMipCut){
+                                        float mipCut, float centralMipCut, float adjacentMipCut){
         
         //Load hit info
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer_(nLayers_);
@@ -132,14 +132,34 @@
             //Calculate the trackposition truth
             trackVec[trackLoop].setParticleInfo( (*genvec)[trackLoop] ); 
             std::vector<ROOT::Math::XYPoint> truthPositions;
+            std::vector<ROOT::Math::XYPoint> truthDistsFromEdge;
             for (unsigned int layer(0);layer<nLayers_;layer++) {
                 double x = trackVec[trackLoop].getParticleInfo().x() 
                             + (layerZPositions_[layer]-trackVec[trackLoop].getParticleInfo().z())*((*genvec)[trackLoop].px())/((*genvec)[trackLoop].pz());
                 double y = trackVec[trackLoop].getParticleInfo().y() 
                             + (layerZPositions_[layer]-trackVec[trackLoop].getParticleInfo().z())*((*genvec)[trackLoop].py())/((*genvec)[trackLoop].pz());
                 truthPositions.push_back(ROOT::Math::XYPoint(x,y));
+
+                //Dists from edge
+                float nearestCentreX = 10.0*round(x/10);
+                float nearestCentreY = 10.0*round(y/10);
+                float distToEdgeX;
+                float distToEdgeY;
+                if (x < nearestCentreX) {
+                    distToEdgeX = x - (nearestCentreX - 5);
+                }else{
+                    distToEdgeX = x - (nearestCentreX + 5);
+                }
+                if (y < nearestCentreY) {
+                    distToEdgeY = y - (nearestCentreY - 5);
+                }else{
+                    distToEdgeY = y - (nearestCentreY + 5);
+                }
+                truthDistsFromEdge.push_back(ROOT::Math::XYPoint(distToEdgeX,distToEdgeY));
+
             }
             trackVec[trackLoop].setTruthPositions(truthPositions);
+            trackVec[trackLoop].setTruthDistsFromEdge(truthDistsFromEdge);
 
             //Energy-weighted positions, hits,  and position within cell
             std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3(nLayers_);
@@ -147,12 +167,15 @@
             std::vector<ROOT::Math::XYPoint> energyWeightedXY(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromHitCentre(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromTileEdges(nLayers_);
+            std::vector<std::vector<bool>>   adjacentCutsApplied(nLayers_);
+
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
                 std::vector<HGCSSRecoHit> hit3x3(0);
                 ROOT::Math::XYPoint energyWeightedPoint(9999,9999);
                 ROOT::Math::XYPoint distFromHitCentre(9999,9999);
                 ROOT::Math::XYPoint distsFromTileEdge(9999,9999);
+                std::vector<bool> adjacentCuts(4);
 
                 bool mipCutsPass = false;
                 float closestCellIndex(0);
@@ -171,10 +194,12 @@
                     }     
                 
                     //Does it pass the central Mip cut?
-                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < centralMipCut) {
+                    if (hitsByLayer_[layerLoop][closestCellIndex].energy() < centralMipCut && debug_) {
                         std::cout << "Layer " << layerLoop << " Central hit fails the central hit mip cut" << std::endl;
                     }
                     mipCutsPass = hitsByLayer_[layerLoop][closestCellIndex].energy() > centralMipCut;
+
+
                 }
                 
                 if (mipCutsPass) {
@@ -199,6 +224,38 @@
                         }
                     } 
                     centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
+
+                    //Flag when the adjacent cells are less than the adjacent cell MIP cut
+                    adjacentCuts[0] = false;
+                    adjacentCuts[1] = false;
+                    adjacentCuts[2] = false;
+                    adjacentCuts[3] = false;
+                    for (unsigned hit(0);hit<hit3x3.size();hit++) {
+
+                        // - B -
+                        // A x C
+                        // - D -
+
+                        //A
+                        bool aFail = hit3x3[hit].get_x()-centralHitsByLayer[layerLoop].get_x()-0.1 < -1.0*geomConv.cellSize(layerLoop,radialDisplacement) &&
+                                     hit3x3[hit].get_y() == centralHitsByLayer[layerLoop].get_y() && hit3x3[hit].energy() < adjacentMipCut;
+                        //B
+                        bool bFail = hit3x3[hit].get_y()-centralHitsByLayer[layerLoop].get_y()+0.1 > geomConv.cellSize(layerLoop,radialDisplacement) &&
+                                     hit3x3[hit].get_x() == centralHitsByLayer[layerLoop].get_x() && hit3x3[hit].energy() < adjacentMipCut;
+                        //C
+                        bool cFail = hit3x3[hit].get_x()-centralHitsByLayer[layerLoop].get_x()+0.1 > geomConv.cellSize(layerLoop,radialDisplacement) &&
+                                     hit3x3[hit].get_y() == centralHitsByLayer[layerLoop].get_y() && hit3x3[hit].energy() < adjacentMipCut;
+                        //D
+                        bool dFail = hit3x3[hit].get_y()-centralHitsByLayer[layerLoop].get_y()-0.1 < -1.0*geomConv.cellSize(layerLoop,radialDisplacement) &&
+                                     hit3x3[hit].get_x() == centralHitsByLayer[layerLoop].get_x() && hit3x3[hit].energy() < adjacentMipCut;
+
+                        if (aFail) adjacentCuts[0] = true;
+                        if (bFail) adjacentCuts[1] = true;
+                        if (cFail) adjacentCuts[2] = true;
+                        if (dFail) adjacentCuts[3] = true;
+
+                    }
+
                     //Calculate energy-weighted position
                     //XY position
                     double energyWeightedX(0.0), energyWeightedY(0.0);
@@ -238,6 +295,7 @@
                 energyWeightedXY[layerLoop] = energyWeightedPoint;
                 distsFromHitCentre[layerLoop] = distFromHitCentre;
                 distsFromTileEdges[layerLoop] = distsFromTileEdge;
+                adjacentCutsApplied[layerLoop] = adjacentCuts;
 
             }
             //setters
@@ -246,11 +304,12 @@
             trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentre);
             trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdges);
             trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
+            trackVec[trackLoop].setAdjacentCutsStatus(adjacentCutsApplied);
 
             //Print info to screen
             if (debug_) {
                 std::cout << "Track " << trackLoop << std::endl;
-                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
+                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart() << std::endl;
                 std::cout << setw(12) << "x0"  << setw(12) << "y0" << setw(12) << "z0" << setw(12) << "PDG Id" ;
                 std::cout << setw(12) << "Eta" << setw(12) << "Phi" << std::endl;
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().x();
@@ -278,7 +337,7 @@
                     std::cout << setw(12) << layerLoop;
                     std::cout << std::endl;
                 }
-                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
+                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart() << std::endl;
             }
         }
         tracks_ = trackVec;
@@ -293,8 +352,9 @@
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre = tracks_[index].getDistsFromHitCentre();
         std::vector<ROOT::Math::XYPoint> distsFromTileEdges = tracks_[index].getDistsFromTileEdges();
         std::vector<HGCSSRecoHit> centralHitsByLayer = tracks_[index].getCentralHitsByLayer();
+        std::vector<std::vector<bool>> adjacentCutsStatus = tracks_[index].getAdjacentCutsStatus();
 
-        outStruct.showerStart = tracks_[index].getShowerStart(0.1);
+        outStruct.showerStart = tracks_[index].getShowerStart();
         for (unsigned layer(0);layer<28;layer++) {
             outStruct.truthX[layer] = truthPositions[layer].X();
             outStruct.truthY[layer] = truthPositions[layer].Y();
@@ -307,9 +367,13 @@
             outStruct.distsFromHitCentreY[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).Y();
             outStruct.distsFromTileEdgesX[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).X();
             outStruct.distsFromTileEdgesY[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).Y();
+            outStruct.aAdjacentCut[layer] = adjacentCutsStatus[layer][0];
+            outStruct.bAdjacentCut[layer] = adjacentCutsStatus[layer][1];
+            outStruct.cAdjacentCut[layer] = adjacentCutsStatus[layer][2];
+            outStruct.dAdjacentCut[layer] = adjacentCutsStatus[layer][3];
+            outStruct.truthDistsFromEdgeX[layer] = tracks_[index].getTruthDistFromEdge(layer).X();
+            outStruct.truthDistsFromEdgeY[layer] = tracks_[index].getTruthDistFromEdge(layer).Y();
         }
-
         
         return outStruct;
     }
-
