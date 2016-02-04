@@ -42,6 +42,10 @@ struct TrackInfo {
     Bool_t  dAdjacentCut[28];
     Float_t truthDistsFromEdgeX[28];
     Float_t truthDistsFromEdgeY[28];
+    Float_t energyWeighted5x5X[28];
+    Float_t energyWeighted5x5Y[28];
+    Float_t distsFromTileEdges5x5X[28];
+    Float_t distsFromTileEdges5x5Y[28];
 
 };
 
@@ -52,10 +56,13 @@ class TrackTruth {
         std::vector<ROOT::Math::XYPoint> truthPositions_;
         std::vector<ROOT::Math::XYPoint> truthDistsFromEdge_;
         std::vector<ROOT::Math::XYPoint> energyWeightedXY_;
+        std::vector<ROOT::Math::XYPoint> energyWeighted5x5XY_;
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3_;
+        std::vector<std::vector<HGCSSRecoHit>> hitsByLayer5x5_;
         std::vector<HGCSSRecoHit> centralHitsByLayer_;
         std::vector<ROOT::Math::XYPoint> distsFromHitCentre_;
         std::vector<ROOT::Math::XYPoint> distsFromTileEdges_;
+        std::vector<ROOT::Math::XYPoint> distsFromTileEdges5x5_;
         std::vector<std::vector<bool>> adjacentCutsStatus_;
 
     public:
@@ -64,9 +71,12 @@ class TrackTruth {
         void setTruthPositions(std::vector<ROOT::Math::XYPoint> truthPositions) {truthPositions_ = truthPositions;}
         void setTruthDistsFromEdge(std::vector<ROOT::Math::XYPoint> truthDistsFromEdge) {truthDistsFromEdge_ = truthDistsFromEdge;}
         void setEnergyWeightedXY(std::vector<ROOT::Math::XYPoint> energyWeightedXY) {energyWeightedXY_ = energyWeightedXY;}
-        void setHitsByLayer(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
+        void setEnergyWeighted5x5XY(std::vector<ROOT::Math::XYPoint> energyWeighted5x5XY) {energyWeighted5x5XY_ = energyWeighted5x5XY;}
+        void setHitsByLayer3x3(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3) {hitsByLayer3x3_ = hitsByLayer3x3;}
+        void setHitsByLayer5x5(std::vector<std::vector<HGCSSRecoHit>> hitsByLayer5x5) {hitsByLayer5x5_ = hitsByLayer5x5;}
         void setDistsFromHitCentre(std::vector<ROOT::Math::XYPoint> distsFromHitCentre) {distsFromHitCentre_ = distsFromHitCentre;}
         void setDistsFromTileEdges(std::vector<ROOT::Math::XYPoint> distsFromTileEdges) {distsFromTileEdges_ = distsFromTileEdges;}
+        void setDistsFromTileEdges5x5(std::vector<ROOT::Math::XYPoint> distsFromTileEdges5x5) {distsFromTileEdges5x5_ = distsFromTileEdges5x5;}
         void setCentralHitsByLayer(std::vector<HGCSSRecoHit> centralHitsByLayer) {centralHitsByLayer_ = centralHitsByLayer;}
         void setAdjacentCutsStatus(std::vector<std::vector<bool>> adjacentCutsStatus) {adjacentCutsStatus_ = adjacentCutsStatus;}
 
@@ -76,9 +86,12 @@ class TrackTruth {
         std::vector<ROOT::Math::XYPoint> getTruthPositions() {return truthPositions_;}
         std::vector<ROOT::Math::XYPoint> getTruthDistsFromEdge() {return truthDistsFromEdge_;}
         std::vector<ROOT::Math::XYPoint> getEnergyWeightedXY() {return energyWeightedXY_;}
+        std::vector<ROOT::Math::XYPoint> getEnergyWeighted5x5XY() {return energyWeighted5x5XY_;}
         std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer3x3() {return hitsByLayer3x3_;}
+        std::vector<std::vector<HGCSSRecoHit>> getHitsByLayer5x5() {return hitsByLayer5x5_;}
         std::vector<ROOT::Math::XYPoint> getDistsFromHitCentre() {return distsFromHitCentre_;}
         std::vector<ROOT::Math::XYPoint> getDistsFromTileEdges() {return distsFromTileEdges_;}
+        std::vector<ROOT::Math::XYPoint> getDistsFromTileEdges5x5() {return distsFromTileEdges5x5_;}
         std::vector<HGCSSRecoHit> getCentralHitsByLayer() {return centralHitsByLayer_;}
         std::vector<std::vector<bool>> getAdjacentCutsStatus() {return adjacentCutsStatus_;}
 
@@ -86,9 +99,12 @@ class TrackTruth {
         ROOT::Math::XYPoint getTruthPosition(unsigned layer) {return truthPositions_[layer];}
         ROOT::Math::XYPoint getTruthDistFromEdge(unsigned layer) {return truthDistsFromEdge_[layer];}
         ROOT::Math::XYPoint getEnergyWeightedXYAtLayer(unsigned layer) {return energyWeightedXY_[layer];}
+        ROOT::Math::XYPoint getEnergyWeighted5x5XYAtLayer(unsigned layer) {return energyWeighted5x5XY_[layer];}
         ROOT::Math::XYPoint getDistsFromHitCentreAtLayer(unsigned layer) {return distsFromHitCentre_[layer];}
         ROOT::Math::XYPoint getDistsFromTileEdgesAtLayer(unsigned layer) {return distsFromTileEdges_[layer];}
-        unsigned numberOfHitsInLayer(unsigned layer) {return hitsByLayer3x3_[layer].size();}
+        ROOT::Math::XYPoint getDistsFromTileEdges5x5AtLayer(unsigned layer) {return distsFromTileEdges5x5_[layer];}
+        unsigned numberOfHitsInLayer3x3(unsigned layer) {return hitsByLayer3x3_[layer].size();}
+        unsigned numberOfHitsInLayer5x5(unsigned layer) {return hitsByLayer5x5_[layer].size();}
         float energyOfCentralHit(unsigned layer) {return centralHitsByLayer_[layer].energy();}
         float totalEnergyOf3x3Hit(unsigned layer) {
             float energy(0.0);
@@ -97,19 +113,14 @@ class TrackTruth {
             }
             return energy;
         }
+        float totalEnergyOf5x5Hit(unsigned layer) {
+            float energy(0.0);
+            for (unsigned hit(0);hit<hitsByLayer5x5_[layer].size();hit++)  {
+                energy += hitsByLayer5x5_[layer][hit].energy();
+            }
+            return energy;
+        }
 
-/*                
-        unsigned getShowerStart(float cut) {
-            std::vector<float> energies;
-            for (unsigned layer(0);layer<28;layer++) {energies.push_back( totalEnergyOf3x3Hit(layer) );}
-            unsigned maxE = *std::max_element(energies.begin(),energies.end());
-            for (unsigned layer(0);layer<28;layer++) {
-                if (energies[layer]/maxE > cut) {return layer;}
-            } 
-            return 0;
-        } 
-*/
-            
         unsigned getShowerStart() {
             unsigned startLayer(9999);
             for (unsigned layer(0);layer<energyWeightedXY_.size();layer++) {

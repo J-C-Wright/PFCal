@@ -292,8 +292,16 @@ int main(int argc, char** argv){//main
     treeLeaves  = TString("showerStart/I:energyWeightedX[28]/F:energyWeightedY[28]/F:truthX[28]/F:truthY[28]/F:distsFromHitCentreX[28]/F:");
     treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I:");
     treeLeaves += TString("aAdjacentCut[28]/B:bAdjacentCut[28]/B:cAdjacentCut[28]/B:dAdjacentCut[28]/B:");
-    treeLeaves += TString("truthDistsFromEdgeX[28]/F:truthDistsFromEdgeY[28]/F");
+    treeLeaves += TString("truthDistsFromEdgeX[28]/F:truthDistsFromEdgeY[28]/F:");
+    treeLeaves += TString("energyWeighted5x5X[28]/F:energyWeighted5x5Y[28]/F:distsFromTileEdges5x5X[28]/F:distsFromTileEdges5x5Y[28]/F");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
+
+/*
+    Float_t energyWeighted5x5X[28];
+    Float_t energyWeighted5x5Y[28];
+    Float_t distsFromTileEdges5x5X[28];
+    Float_t distsFromTileEdges5x5Y[28];
+*/
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
@@ -334,7 +342,5 @@ int main(int argc, char** argv){//main
     outputFile->Close();
   
     return 0;
-
-
 
 }//main

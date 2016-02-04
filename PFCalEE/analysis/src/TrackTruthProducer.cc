@@ -163,18 +163,24 @@
 
             //Energy-weighted positions, hits,  and position within cell
             std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3(nLayers_);
+            std::vector<std::vector<HGCSSRecoHit>> hitsByLayer5x5(nLayers_);
             std::vector<HGCSSRecoHit> centralHitsByLayer(nLayers_);
             std::vector<ROOT::Math::XYPoint> energyWeightedXY(nLayers_);
+            std::vector<ROOT::Math::XYPoint> energyWeighted5x5XY(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromHitCentre(nLayers_);
             std::vector<ROOT::Math::XYPoint> distsFromTileEdges(nLayers_);
+            std::vector<ROOT::Math::XYPoint> distsFromTileEdges5x5(nLayers_);
             std::vector<std::vector<bool>>   adjacentCutsApplied(nLayers_);
 
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
                 std::vector<HGCSSRecoHit> hit3x3(0);
+                std::vector<HGCSSRecoHit> hit5x5(0);
                 ROOT::Math::XYPoint energyWeightedPoint(9999,9999);
+                ROOT::Math::XYPoint energyWeighted5x5Point(9999,9999);
                 ROOT::Math::XYPoint distFromHitCentre(9999,9999);
                 ROOT::Math::XYPoint distsFromTileEdge(9999,9999);
+                ROOT::Math::XYPoint distsFromTileEdge5x5(9999,9999);
                 std::vector<bool> adjacentCuts(4);
 
                 bool mipCutsPass = false;
@@ -216,6 +222,9 @@
                     distFromHitCentre.SetX(dx);
                     distFromHitCentre.SetY(dy);
 
+                    //Store central hit
+                    centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
+
                     //find the hits that belong to the 3x3 grid centred on the closest
                     for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
                         if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step &&
@@ -223,7 +232,19 @@
                             hit3x3.push_back(hitsByLayer_[layerLoop][hitLoop]);
                         }
                     } 
-                    centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
+
+                    //Find the hits that belong to the 5x5 grid centred on the closest
+                    for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
+                        if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step*2.0 &&
+                            fabs(hitsByLayer_[layerLoop][hitLoop].get_y() - hitsByLayer_[layerLoop][closestCellIndex].get_y() ) < step*2.0) {
+                            hit5x5.push_back(hitsByLayer_[layerLoop][hitLoop]);
+                        }
+                    } 
+
+
+
+
+
 
                     //Flag when the adjacent cells are less than the adjacent cell MIP cut
                     adjacentCuts[0] = false;
@@ -231,11 +252,9 @@
                     adjacentCuts[2] = false;
                     adjacentCuts[3] = false;
                     for (unsigned hit(0);hit<hit3x3.size();hit++) {
-
                         // - B -
                         // A x C
                         // - D -
-
                         //A
                         bool aFail = hit3x3[hit].get_x()-centralHitsByLayer[layerLoop].get_x()-0.1 < -1.0*geomConv.cellSize(layerLoop,radialDisplacement) &&
                                      hit3x3[hit].get_y() == centralHitsByLayer[layerLoop].get_y() && hit3x3[hit].energy() < adjacentMipCut;
@@ -248,16 +267,15 @@
                         //D
                         bool dFail = hit3x3[hit].get_y()-centralHitsByLayer[layerLoop].get_y()-0.1 < -1.0*geomConv.cellSize(layerLoop,radialDisplacement) &&
                                      hit3x3[hit].get_x() == centralHitsByLayer[layerLoop].get_x() && hit3x3[hit].energy() < adjacentMipCut;
-
                         if (aFail) adjacentCuts[0] = true;
                         if (bFail) adjacentCuts[1] = true;
                         if (cFail) adjacentCuts[2] = true;
                         if (dFail) adjacentCuts[3] = true;
-
                     }
 
                     //Calculate energy-weighted position
                     //XY position
+                    //3x3
                     double energyWeightedX(0.0), energyWeightedY(0.0);
                     double totalEnergy(0.0);
                     for (unsigned int hitLoop(0);hitLoop<hit3x3.size();hitLoop++) {
@@ -267,8 +285,20 @@
                     }
                     energyWeightedPoint.SetX(energyWeightedX/totalEnergy);
                     energyWeightedPoint.SetY(energyWeightedY/totalEnergy);
+                    //5x5
+                    energyWeightedX = 0.0; energyWeightedY = 0.0;
+                    totalEnergy = 0.0;
+                    for (unsigned int hitLoop(0);hitLoop<hit5x5.size();hitLoop++) {
+                        energyWeightedX += hit5x5[hitLoop].get_x()*hit5x5[hitLoop].energy();
+                        energyWeightedY += hit5x5[hitLoop].get_y()*hit5x5[hitLoop].energy();
+                        totalEnergy += hit5x5[hitLoop].energy();
+                    }
+                    energyWeighted5x5Point.SetX(energyWeightedX/totalEnergy);
+                    energyWeighted5x5Point.SetY(energyWeightedY/totalEnergy);
+
 
                     //Calculate the displacement of the energy-weighted position from the edges
+                    //3x3
                     //X
                     float positionEdgeX1 = hitsByLayer_[layerLoop][closestCellIndex].get_x() - geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
                     float positionEdgeX2 = hitsByLayer_[layerLoop][closestCellIndex].get_x() + geomConv.cellSize(layerLoop,radialDisplacement)/2.0;
@@ -285,24 +315,44 @@
                     }else{
                         distsFromTileEdge.SetY(energyWeightedPoint.Y()-positionEdgeY2);
                     }    
-                    
+
+                    //5x5
+                    //X
+                    if (fabs(positionEdgeX1 - energyWeighted5x5Point.X()) < fabs(positionEdgeX2 - energyWeighted5x5Point.X())) {
+                        distsFromTileEdge5x5.SetX(energyWeighted5x5Point.X()-positionEdgeX1);
+                    }else{
+                        distsFromTileEdge5x5.SetX(energyWeighted5x5Point.X()-positionEdgeX2);
+                    } 
+                    //Y
+                    if (fabs(positionEdgeY1 - energyWeighted5x5Point.Y()) < fabs(positionEdgeY2 - energyWeighted5x5Point.Y())) {
+                        distsFromTileEdge5x5.SetY(energyWeighted5x5Point.Y()-positionEdgeY1);
+                    }else{
+                        distsFromTileEdge5x5.SetY(energyWeighted5x5Point.Y()-positionEdgeY2);
+                    }    
+
 
                 }else {
                     if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}
                 }
 
                 hitsByLayer3x3[layerLoop] = hit3x3;
+                hitsByLayer5x5[layerLoop] = hit5x5;
                 energyWeightedXY[layerLoop] = energyWeightedPoint;
+                energyWeighted5x5XY[layerLoop] = energyWeighted5x5Point;
                 distsFromHitCentre[layerLoop] = distFromHitCentre;
                 distsFromTileEdges[layerLoop] = distsFromTileEdge;
+                distsFromTileEdges5x5[layerLoop] = distsFromTileEdge5x5;
                 adjacentCutsApplied[layerLoop] = adjacentCuts;
 
             }
             //setters
-            trackVec[trackLoop].setHitsByLayer(hitsByLayer3x3);
+            trackVec[trackLoop].setHitsByLayer3x3(hitsByLayer3x3);
+            trackVec[trackLoop].setHitsByLayer5x5(hitsByLayer5x5);
             trackVec[trackLoop].setEnergyWeightedXY(energyWeightedXY);
+            trackVec[trackLoop].setEnergyWeighted5x5XY(energyWeighted5x5XY);
             trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentre);
             trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdges);
+            trackVec[trackLoop].setDistsFromTileEdges5x5(distsFromTileEdges5x5);
             trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
             trackVec[trackLoop].setAdjacentCutsStatus(adjacentCutsApplied);
 
@@ -333,7 +383,7 @@
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromHitCentreAtLayer(layerLoop).Y();
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).X();
                     std::cout << setw(12) << trackVec[trackLoop].getDistsFromTileEdgesAtLayer(layerLoop).Y();
-                    std::cout << setw(12) << trackVec[trackLoop].numberOfHitsInLayer(layerLoop);
+                    std::cout << setw(12) << trackVec[trackLoop].numberOfHitsInLayer3x3(layerLoop);
                     std::cout << setw(12) << layerLoop;
                     std::cout << std::endl;
                 }
@@ -362,7 +412,7 @@
             outStruct.energyWeightedY[layer] = energyWeightedXY[layer].Y();
             outStruct.centralE[layer] = centralHitsByLayer[layer].energy();
             outStruct.totalE[layer] = tracks_[index].totalEnergyOf3x3Hit(layer);
-            outStruct.numHitsInLayer[layer] = tracks_[index].numberOfHitsInLayer(layer);
+            outStruct.numHitsInLayer[layer] = tracks_[index].numberOfHitsInLayer3x3(layer);
             outStruct.distsFromHitCentreX[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).X();
             outStruct.distsFromHitCentreY[layer]  = tracks_[index].getDistsFromHitCentreAtLayer(layer).Y();
             outStruct.distsFromTileEdgesX[layer]  = tracks_[index].getDistsFromTileEdgesAtLayer(layer).X();
@@ -373,7 +423,12 @@
             outStruct.dAdjacentCut[layer] = adjacentCutsStatus[layer][3];
             outStruct.truthDistsFromEdgeX[layer] = tracks_[index].getTruthDistFromEdge(layer).X();
             outStruct.truthDistsFromEdgeY[layer] = tracks_[index].getTruthDistFromEdge(layer).Y();
+            outStruct.energyWeighted5x5X[layer]  = tracks_[index].getEnergyWeighted5x5XYAtLayer(layer).X();
+            outStruct.energyWeighted5x5Y[layer]  = tracks_[index].getEnergyWeighted5x5XYAtLayer(layer).Y();
+            outStruct.distsFromTileEdges5x5X[layer] = tracks_[index].getDistsFromTileEdges5x5AtLayer(layer).X();
+            outStruct.distsFromTileEdges5x5Y[layer] = tracks_[index].getDistsFromTileEdges5x5AtLayer(layer).Y();
         }
         
         return outStruct;
     }
+
