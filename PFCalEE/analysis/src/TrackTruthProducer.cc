@@ -241,11 +241,6 @@
                         }
                     } 
 
-
-
-
-
-
                     //Flag when the adjacent cells are less than the adjacent cell MIP cut
                     adjacentCuts[0] = false;
                     adjacentCuts[1] = false;

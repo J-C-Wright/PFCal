@@ -2,13 +2,10 @@
 #include <sstream>
 using namespace std;
 
-void EffSigmaGraph() {
-
-        int start(-1);
+void EffSigmaGraphRL() {
 
         std::ostringstream fileName;
-        //fileName << "EffSigma_Truth_LS" << start << ".csv";
-        fileName << "EffSigma_Truth_LS" << start << ".csv";
+        fileName << "EffSigma_Truth3x3_RL.csv";
         string name = fileName.str();
         ifstream file (name.c_str());
 
@@ -39,6 +36,7 @@ void EffSigmaGraph() {
             biased[row] = data[row][0];
             corrected[row] = data[row][1];
             layerNum[row] = data[row][2];
+            std::cout << setw(12) << layerNum[row] << setw(12) << biased[row] << setw(12) << corrected[row] << std::endl;
         }
 
         TCanvas c1("c1");
@@ -53,13 +51,9 @@ void EffSigmaGraph() {
         
         graph1->Draw();
         graph1->GetYaxis()->SetRangeUser(0,1.0);
-        graph1->GetXaxis()->SetTitle("Number of layers after shower start");
+        graph1->GetXaxis()->SetTitle("Layer Number");
         graph1->GetYaxis()->SetTitle("x_{measured} - x_{true} (mm)");
-        if (start >= 0) {
-            graph1->SetTitle(Form("#sigma_{eff} within #pm1mm of edge before/after correction (layer%d)",start));
-        }else{
-            graph1->SetTitle("#sigma_{eff} within #pm1mm of edge before/after correction");
-        }
+        graph1->SetTitle("#sigma_{eff} within #pm1mm of edge before/after correction by layer");
 
         graph2->Draw("SAME");
 
@@ -68,10 +62,6 @@ void EffSigmaGraph() {
         leg->AddEntry(graph2,"Corrected","l");
         leg->Draw();
 
-        if (start >= 0) {
-            c1.Print(Form("EffectiveSigmaByLayer_%d.pdf",start));
-        }else{
-            c1.Print("EffectiveSigmaByLayerAll.pdf");
-        }
+        c1.Print("EffectiveSigmaByLayerRL.pdf");
 
 }

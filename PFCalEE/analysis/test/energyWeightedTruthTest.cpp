@@ -329,10 +329,10 @@ int main(int argc, char** argv){//main
             tracks.push_back(trackTruthProducer.getTrack(0));
             trackStruct = trackTruthProducer.trackStruct(0);
             trackTree->Fill();
+            if (ievt%50 == 0) {std::cout << " ...Done!" << std::endl;}
         }else{
             if (ievt%50 == 0) {std::cout << " Not a single photon -- Skipping event." << std::endl;}
         }
-        if (ievt%50 == 0) {std::cout << " ...Done!" << std::endl;}
     }
     std::cout << "There were " << photonCount << " photons" << std::endl;
 
