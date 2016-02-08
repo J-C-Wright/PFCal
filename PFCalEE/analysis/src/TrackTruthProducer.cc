@@ -8,7 +8,6 @@
 #include "HGCSSGenParticle.hh"
 #include "HGCSSRecoHit.hh"
 #include "TrackTruthProducer.hh"
-//#include "HexagonalGeometry.hh"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -114,10 +113,10 @@
         layerZsLoaded_ = true;
     }
 
-    void TrackTruthProducer::produce(std::vector<HGCSSGenParticle> *genvec,
-                                        std::vector<HGCSSRecoHit> *recoHitVec,
-                                        const HGCSSGeometryConversion & geomConv,
-                                        int mipCut, int centralMipCut){
+    void TrackTruthProducer::produce( std::vector<HGCSSGenParticle> *genvec,
+                                      std::vector<HGCSSRecoHit> *recoHitVec,
+                                      const HGCSSGeometryConversion & geomConv,
+                                      float mipCut, float centralMipCut, float adjacentMipCut ) {
         
         //Load hit info
         std::vector<std::vector<HGCSSRecoHit>> hitsByLayer_(nLayers_);
@@ -152,7 +151,7 @@
             trackVec[trackLoop].setTruthPositionsUVW(truthPositionsUVW);
 
             //Energy-weighted positions, hits,  and position within cell
-            std::vector<std::vector<HGCSSRecoHit>> hitsByLayer3x3(nLayers_);
+            std::vector<std::vector<HGCSSRecoHit>> hitsByLayer7(nLayers_);
             std::vector<HGCSSRecoHit> centralHitsByLayer(nLayers_);
 
             //XY
@@ -166,7 +165,7 @@
 
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
-                std::vector<HGCSSRecoHit> hit3x3(0);
+                std::vector<HGCSSRecoHit> hit7(0);
                 ROOT::Math::XYPoint dummy(9999,9999);
                 //XY
                 ROOT::Math::XYPoint energyWeightedPoint = dummy;
@@ -212,7 +211,7 @@
                     for (unsigned int hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
                         if (fabs(hitsByLayer_[layerLoop][hitLoop].get_x() - hitsByLayer_[layerLoop][closestCellIndex].get_x() ) < step &&
                             fabs(hitsByLayer_[layerLoop][hitLoop].get_y() - hitsByLayer_[layerLoop][closestCellIndex].get_y() ) < step) {
-                            hit3x3.push_back(hitsByLayer_[layerLoop][hitLoop]);
+                            hit7.push_back(hitsByLayer_[layerLoop][hitLoop]);
                         }
                     } 
                     centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
@@ -221,18 +220,18 @@
                     //XY position
                     double energyWeightedX(0.0), energyWeightedY(0.0);
                     double totalEnergy(0.0);
-                    for (unsigned int hitLoop(0);hitLoop<hit3x3.size();hitLoop++) {
-                        energyWeightedX += hit3x3[hitLoop].get_x()*hit3x3[hitLoop].energy();
-                        energyWeightedY += hit3x3[hitLoop].get_y()*hit3x3[hitLoop].energy();
-                        totalEnergy += hit3x3[hitLoop].energy();
+                    for (unsigned int hitLoop(0);hitLoop<hit7.size();hitLoop++) {
+                        energyWeightedX += hit7[hitLoop].get_x()*hit7[hitLoop].energy();
+                        energyWeightedY += hit7[hitLoop].get_y()*hit7[hitLoop].energy();
+                        totalEnergy += hit7[hitLoop].energy();
                     }
                     energyWeightedPoint.SetX(energyWeightedX/totalEnergy);
                     energyWeightedPoint.SetY(energyWeightedY/totalEnergy);
 
-                    //Make hexagon object for hex geometry stuff
+                    //Make hexagon object for hex geometry
                     ROOT::Math::XYPoint centre(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
-                    Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), true, centre);
-
+                    Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), false, centre);
+/*
                     //Set energy-weighted position from centre
                     std::pair<float,float> displacementFromCentre = tile.getDisplacementFromCentre_XY( energyWeightedPoint );
                     distFromHitCentre.SetX(displacementFromCentre.first);
@@ -247,12 +246,32 @@
                     energyWeightedPointUVW.setUVW(energyWeightedPoint);
                     distFromHitCentreUVW.setUVW(distFromHitCentre);
                     distFromTileEdgeUVW = tile.getDistanceToEdges_UVW(distFromHitCentre);
+*/
+
+                    //Adjacent edge mip cuts
+                    for (unsigned hitLoop(0);hitLoop<hit7.size();hitLoop++) {
+                        std::cout << "Testing dist to tile " << hitLoop << std::endl;
+                        ROOT::Math::XYPoint adjacentCentre(hit7[hitLoop].get_x(),hit7[hitLoop].get_y());
+                        Hexagon adjacentTile(geomConv.cellSize(layerLoop,radialDisplacement), false, adjacentCentre);
+
+                        UVWPoint centreUVW    = tile.getUVWCentre();
+                        UVWPoint neighbour = adjacentTile.getUVWCentre();
+
+                        UVWPoint newPoint = neighbour - centreUVW;
+                        newPoint.print();
+                        std::cout << "New creator test" << std::endl;
+                        UVWPoint testPoint(newPoint.getV(),newPoint.getW());
+                        testPoint.print();
+
+
+                    }
+
 
                 }else {
                     if (debug_) {std::cout << "---- " << "In layer " << layerLoop << " there are no hits above " << mipCut << " MIPs ----" << std::endl;}
                 }
 
-                hitsByLayer3x3[layerLoop] = hit3x3;
+                hitsByLayer7[layerLoop] = hit7;
                 //XY
                 energyWeightedXY[layerLoop]   = energyWeightedPoint;
                 distsFromHitCentre[layerLoop] = distFromHitCentre;
@@ -264,7 +283,7 @@
 
             }
             //setters
-            trackVec[trackLoop].setHitsByLayer(hitsByLayer3x3);
+            trackVec[trackLoop].setHitsByLayer(hitsByLayer7);
             trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
             //XY
             trackVec[trackLoop].setEnergyWeightedXY(energyWeightedXY);

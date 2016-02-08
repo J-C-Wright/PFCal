@@ -107,8 +107,8 @@ bool ShowerProfile::buildShowerProfile(Float_t eElec, TString version, TNtuple *
 	  Float_t weight(volX0/refX0);
 	  double hitEn = lHit.energy()*1e3/mipEn;
 	  if(hitEn>1.0) totNmipHits++;
-	  double posx = lHit.get_x();
-	  double posy = lHit.get_y();
+	  double posx = 1.0;//lHit.get_x();
+	  double posy = 1.0;//lHit.get_y();
 
 	  //save in deposits in the transverse plane with fixed cell size
 	  if( edeps_xy.find( volNb ) == edeps_xy.end() )

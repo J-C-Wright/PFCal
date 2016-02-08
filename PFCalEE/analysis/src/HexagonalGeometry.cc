@@ -29,76 +29,54 @@
 
 #define PI 3.14159265
 
-    std::pair<unsigned,unsigned> Hexagon::getNearestEdges_XY(ROOT::Math::XYPoint hit) {
+    ROOT::Math::XYPoint Hexagon::getDistanceToEdges_XY(ROOT::Math::XYPoint hit) {
 
-        std::pair<unsigned,unsigned> closestEdges(9999,9999);
-        //First is closest in x, second is closest in y
-        //See personal notes, 7/1/16 pg 2
-
-        //Is it closer to the top or bottom edge?
-        bool closerToTop = hit.Y() > centre_.Y();
-        //Closer to the left or right?
-        bool closerToRight = hit.X() > centre_.X();
-        //Is it in the central region?
-        bool inCentralRegion = fabs( hit.X() - centre_.X() ) < edgeSize_/2.0;
-
-        //Associate to nearest edges
-        if (closerToTop && !closerToRight && !inCentralRegion) {
-            closestEdges.first  = 0;
-            closestEdges.second = 0;
-        }else if (closerToTop && !closerToRight && inCentralRegion) {
-            closestEdges.first  = 0;
-            closestEdges.second = 1;
-        }else if (closerToTop && closerToRight && inCentralRegion) {
-            closestEdges.first  = 2;
-            closestEdges.second = 1;
-        }else if (closerToTop && closerToRight && !inCentralRegion) {
-            closestEdges.first  = 2;
-            closestEdges.second = 2;
-        }else if (!closerToTop && closerToRight && !inCentralRegion) {
-            closestEdges.first  = 3;
-            closestEdges.second = 3;
-        }else if (!closerToTop && closerToRight && inCentralRegion) {
-            closestEdges.first  = 3;
-            closestEdges.second = 4;
-        }else if (!closerToTop && !closerToRight && inCentralRegion) {
-            closestEdges.first  = 5;
-            closestEdges.second = 4;
-        }else if (!closerToTop && closerToRight && inCentralRegion) {
-            closestEdges.first  = 5;
-            closestEdges.second = 5;
-        }
-
-        return closestEdges;
-    }
-
-    std::pair<float,float> Hexagon::getDistanceToEdges_XY(ROOT::Math::XYPoint hit) {
-
-        std::pair<unsigned,unsigned> closestEdges = getNearestEdges_XY(hit); 
         std::pair<float,float> centreDisplacement = getDisplacementFromCentre_XY(hit);
-        std::pair<float,float> distanceToEdges(9999.,9999.);
 
-        float dY = fabs(fabs(centreDisplacement.second) - edgeSize_*sqrt(3)/2);
-        float b = fabs(edgeSize_*0.5 + (1/sqrt(3))*dY - fabs(centreDisplacement.first));
-        float c = dY;
-        if (fabs(centreDisplacement.first) > edgeSize_/2) {
-            c = b*sqrt(3);
+        float dA,dB,A,B;
+        float x,y;
+        if (isEdgeUp_) {
+            A = centreDisplacement.second;
+            B = centreDisplacement.first;
+        }else{
+            A = centreDisplacement.first;
+            B = centreDisplacement.second;
+        }
+        dA = fabs(edgeSize_ - A);
+        dB = fabs(B - fabs( edgeSize_*0.5 + dA/sqrt(3) ));
+        if (fabs(B) > edgeSize_*0.5) {
+            dA = dB*sqrt(3);
         }
 
-        if (centreDisplacement.first < 0 && centreDisplacement.second > 0){
-            c *= -1.0;
-        }else if (centreDisplacement.first > 0 && centreDisplacement.second > 0){
-            b *= -1.0;
-            c *= -1.0;
-        }else if (centreDisplacement.first > 0 && centreDisplacement.second < 0){
-            b *= -1.0; 
+        if (isEdgeUp_) {
+            if (A > 0 && B > 0) {
+                dA *= -1.0;
+                dB *= -1.0;
+            }else if (A > 0 && B < 0) {
+                dA *= -1.0;
+            }else if (A < 0 && B > 0) {
+                dB *= -1.0;
+            }
+            x = B;
+            y = A;
+        }else{
+            if (A > 0 && B > 0) {
+                dA *= -1.0;
+                dB *= -1.0;
+            }else if (A > 0 && B < 0) {
+                dB *= -1.0;
+            }else if (A < 0 && B > 0) {
+                dA *= -1.0;
+            }
+            x = A;
+            y = B;
         }
 
-        distanceToEdges.first  = b;
-        distanceToEdges.second = c;
-
-        return distanceToEdges;    
+        ROOT::Math::XYPoint edgeDists(x,y);
+        return edgeDists;
     }
+
+
     std::pair<float,float> Hexagon::getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit) {
 
         std::pair<float,float> displacementFromCentre(9999.,9999.);
@@ -111,16 +89,17 @@
 
     std::vector<float> Hexagon::getDistanceToEdges_UVW(ROOT::Math::XYPoint hit) {
 
-        UVWPoint centreUVW(centre_);
         UVWPoint hitUVW(hit);
-        UVWPoint distFromCentre = hitUVW - centreUVW;
+        UVWPoint difference = uvwCentre_ - hitUVW;
 
-        float dU = fabs(distFromCentre.getU() - edgeSize_*sqrt(3.0)/2.0);
-        if (distFromCentre.getU() > 0) dU *= -1.0;
-        float dV = fabs(distFromCentre.getV() - edgeSize_*sqrt(3.0)/2.0);
-        if (distFromCentre.getV() > 0) dV *= -1.0;
-        float dW = fabs(distFromCentre.getW() - edgeSize_*sqrt(3.0)/2.0);
-        if (distFromCentre.getW() > 0) dW *= -1.0;
+        float dU = fabs(difference.getU() - edgeSize_*sqrt(3.0)/2.0);
+        if (difference.getU() > 0) dU *= -1.0;
+
+        float dV = fabs(difference.getV() - edgeSize_*sqrt(3.0)/2.0);
+        if (difference.getV() > 0) dV *= -1.0;
+
+        float dW = fabs(difference.getW() - edgeSize_*sqrt(3.0)/2.0);
+        if (difference.getW() > 0) dW *= -1.0;
             
         std::vector<float> edgeDists(3);
         edgeDists[0] = dU;
