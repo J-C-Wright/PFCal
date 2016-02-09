@@ -300,7 +300,9 @@ int main(int argc, char** argv){//main
     treeLeaves += TString("distsFromHitCentreY[28]/F:distsFromTileEdgesX[28]/F:distsFromTileEdgesY[28]/F:centralE[28]/F:totalE[28]/F:numHitsInLayer[28]/I:");
     treeLeaves += TString("energyWeightedU[28]/F:energyWeightedV[28]/F:energyWeightedW[28]/F:truthU[28]/F:truthV[28]/F:truthW[28]/F:");
     treeLeaves += TString("distsFromHitCentreU[28]/F:distsFromHitCentreV[28]/F:distsFromHitCentreW[28]/F:");
-    treeLeaves += TString("distsFromHitCentreUPerp[28]/F:distsFromHitCentreVPerp[28]/F:distsFromHitCentreWPerp[28]/F");
+    treeLeaves += TString("distsFromHitCentreUPerp[28]/F:distsFromHitCentreVPerp[28]/F:distsFromHitCentreWPerp[28]/F:");
+    treeLeaves += TString("truthDistsFromTileEdgesX[28]/F:truthDistsFromTileEdgesY[28]/F:truthDistsFromTileEdgesU[28]/F:");
+    treeLeaves += TString("truthDistsFromTileEdgesV[28]/F:truthDistsFromTileEdgesW[28]/F");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
     /*
     Float_t energyWeightedU[28];
@@ -315,6 +317,12 @@ int main(int argc, char** argv){//main
     Float_t distsFromHitCentreUPerp[28];
     Float_t distsFromHitCentreVPerp[28];
     Float_t distsFromHitCentreWPerp[28];
+
+    Float_t truthDistsFromTileEdgesX[28];
+    Float_t truthDistsFromTileEdgesY[28];
+    Float_t truthDistsFromTileEdgesU[28];
+    Float_t truthDistsFromTileEdgesV[28];
+    Float_t truthDistsFromTileEdgesW[28];
     */
 
 //Calculating track truth

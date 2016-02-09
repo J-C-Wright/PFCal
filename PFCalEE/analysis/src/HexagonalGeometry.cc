@@ -31,16 +31,16 @@
 
     ROOT::Math::XYPoint Hexagon::getDistanceToEdges_XY(ROOT::Math::XYPoint hit) {
 
-        std::pair<float,float> centreDisplacement = getDisplacementFromCentre_XY(hit);
+        ROOT::Math::XYPoint centreDisplacement = getDisplacementFromCentre_XY(hit);
 
         float dA,dB,A,B;
         float x,y;
         if (isEdgeUp_) {
-            A = centreDisplacement.second;
-            B = centreDisplacement.first;
+            A = centreDisplacement.Y();
+            B = centreDisplacement.X();
         }else{
-            A = centreDisplacement.first;
-            B = centreDisplacement.second;
+            A = centreDisplacement.X();
+            B = centreDisplacement.Y();
         }
         dA = fabs(edgeSize_ - A);
         dB = fabs(B - fabs( edgeSize_*0.5 + dA/sqrt(3) ));
@@ -77,34 +77,32 @@
     }
 
 
-    std::pair<float,float> Hexagon::getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit) {
+    ROOT::Math::XYPoint Hexagon::getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit) {
 
-        std::pair<float,float> displacementFromCentre(9999.,9999.);
+        ROOT::Math::XYPoint displacement(hit.X() - centre_.X(), hit.Y() - centre_.Y());
+        return displacement;
 
-        displacementFromCentre.first  = hit.X() - centre_.X();
-        displacementFromCentre.second = hit.Y() - centre_.Y();
-
-        return displacementFromCentre;
     }
 
-    std::vector<float> Hexagon::getDistanceToEdges_UVW(ROOT::Math::XYPoint hit) {
+    std::vector<float> Hexagon::getDistanceToEdges_UVW(UVWPoint hitUVW){
 
-        UVWPoint hitUVW(hit);
-        UVWPoint difference = uvwCentre_ - hitUVW;
+        UVWPoint difference = hitUVW - uvwCentre_;
+        //difference.print();
 
-        float dU = fabs(difference.getU() - edgeSize_*sqrt(3.0)/2.0);
+        float dU = fabs(fabs(difference.getU()) - edgeSize_*sqrt(3.0)/2.0);
         if (difference.getU() > 0) dU *= -1.0;
 
-        float dV = fabs(difference.getV() - edgeSize_*sqrt(3.0)/2.0);
+        float dV = fabs(fabs(difference.getV()) - edgeSize_*sqrt(3.0)/2.0);
         if (difference.getV() > 0) dV *= -1.0;
 
-        float dW = fabs(difference.getW() - edgeSize_*sqrt(3.0)/2.0);
+        float dW = fabs(fabs(difference.getW()) - edgeSize_*sqrt(3.0)/2.0);
         if (difference.getW() > 0) dW *= -1.0;
             
         std::vector<float> edgeDists(3);
         edgeDists[0] = dU;
         edgeDists[1] = dV;
         edgeDists[2] = dW;
+        //std::cout << setw(12) << dU << setw(12) << dV << setw(12) << dW << std::endl;
 
         return edgeDists;
     }

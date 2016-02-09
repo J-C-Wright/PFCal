@@ -143,6 +143,7 @@
 
                 truthPositions.push_back(ROOT::Math::XYPoint(x,y));
                 UVWPoint uvwPoint(ROOT::Math::XYPoint(x,y));
+                uvwPoint.changeOrientation();
                 truthPositionsUVW.push_back(uvwPoint);
 
             }
@@ -156,26 +157,28 @@
 
             //XY
             std::vector<ROOT::Math::XYPoint> energyWeightedXY(nLayers_);
-            std::vector<ROOT::Math::XYPoint> distsFromHitCentre(nLayers_);
-            std::vector<ROOT::Math::XYPoint> distsFromTileEdges(nLayers_);
+            std::vector<ROOT::Math::XYPoint> distsFromHitCentreXY(nLayers_);
+            std::vector<ROOT::Math::XYPoint> distsFromTileEdgesXY(nLayers_);
+            std::vector<ROOT::Math::XYPoint> truthDistsFromTileEdgesXY(nLayers_);
             //UVW
             std::vector<UVWPoint> energyWeightedUVW(nLayers_);
             std::vector<UVWPoint> distsFromHitCentreUVW(nLayers_);
             std::vector<std::vector<float>> distsFromTileEdgesUVW(nLayers_);
+            std::vector<std::vector<float>> truthDistsFromTileEdgesUVW(nLayers_);
 
             for (unsigned layerLoop(0);layerLoop<nLayers_;layerLoop++) {
 
                 std::vector<HGCSSRecoHit> hit7(0);
+                std::vector<HGCSSRecoHit> hit19(0);
                 ROOT::Math::XYPoint dummy(9999,9999);
                 //XY
                 ROOT::Math::XYPoint energyWeightedPoint = dummy;
-                ROOT::Math::XYPoint distFromHitCentre   = dummy;
-                ROOT::Math::XYPoint distFromTileEdge   = dummy;
+                ROOT::Math::XYPoint distFromHitCentreXY = dummy;
+                ROOT::Math::XYPoint distFromTileEdgesXY = dummy;
                 //UVW
                 UVWPoint energyWeightedPointUVW(dummy);
                 UVWPoint distFromHitCentreUVW(dummy);
                 std::vector<float> distFromTileEdgeUVW(3,9999);
-
 
                 bool mipCutsPass = false;
                 float closestCellIndex(0);
@@ -216,8 +219,7 @@
                     } 
                     centralHitsByLayer[layerLoop] = hitsByLayer_[layerLoop][closestCellIndex];
 
-                    //Calculate energy-weighted position
-                    //XY position
+                    //Calculate energy-weighted position in XY
                     double energyWeightedX(0.0), energyWeightedY(0.0);
                     double totalEnergy(0.0);
                     for (unsigned int hitLoop(0);hitLoop<hit7.size();hitLoop++) {
@@ -231,40 +233,66 @@
                     //Make hexagon object for hex geometry
                     ROOT::Math::XYPoint centre(hitsByLayer_[layerLoop][closestCellIndex].get_x(),hitsByLayer_[layerLoop][closestCellIndex].get_y());
                     Hexagon tile(geomConv.cellSize(layerLoop,radialDisplacement), false, centre);
-/*
+
                     //Set energy-weighted position from centre
-                    std::pair<float,float> displacementFromCentre = tile.getDisplacementFromCentre_XY( energyWeightedPoint );
-                    distFromHitCentre.SetX(displacementFromCentre.first);
-                    distFromHitCentre.SetY(displacementFromCentre.second);
+                    distFromHitCentreXY = tile.getDisplacementFromCentre_XY( energyWeightedPoint );
 
                     //Set energy-weighted position from edge
-                    std::pair<float,float> distanceToEdges_EWP = tile.getDistanceToEdges_XY(energyWeightedPoint); 
-                    distFromTileEdge.SetX(distanceToEdges_EWP.first);
-                    distFromTileEdge.SetY(distanceToEdges_EWP.second);
-                    
-                    //UVW Conversions
+                    distFromTileEdgesXY = tile.getDistanceToEdges_XY(energyWeightedPoint);
+
+                    //Set energy-weighted point in UVW
                     energyWeightedPointUVW.setUVW(energyWeightedPoint);
-                    distFromHitCentreUVW.setUVW(distFromHitCentre);
-                    distFromTileEdgeUVW = tile.getDistanceToEdges_UVW(distFromHitCentre);
-*/
+                    energyWeightedPointUVW.changeOrientation();
 
-                    //Adjacent edge mip cuts
-                    for (unsigned hitLoop(0);hitLoop<hit7.size();hitLoop++) {
-                        std::cout << "Testing dist to tile " << hitLoop << std::endl;
-                        ROOT::Math::XYPoint adjacentCentre(hit7[hitLoop].get_x(),hit7[hitLoop].get_y());
-                        Hexagon adjacentTile(geomConv.cellSize(layerLoop,radialDisplacement), false, adjacentCentre);
+                    //Set energy-weighted position from centre in UVW
+                    distFromHitCentreUVW.setUVW(distFromHitCentreXY); 
 
-                        UVWPoint centreUVW    = tile.getUVWCentre();
-                        UVWPoint neighbour = adjacentTile.getUVWCentre();
+                    //Set energy-weighted position from edge in UVW
+                    distFromTileEdgeUVW = tile.getDistanceToEdges_UVW(energyWeightedPointUVW);
+                    std::cout << "EW P: " << setw(12) << distFromTileEdgeUVW[0] << setw(12) << distFromTileEdgeUVW[1] << setw(12) << distFromTileEdgeUVW[2] << std::endl;
 
-                        UVWPoint newPoint = neighbour - centreUVW;
-                        newPoint.print();
-                        std::cout << "New creator test" << std::endl;
-                        UVWPoint testPoint(newPoint.getV(),newPoint.getW());
-                        testPoint.print();
+                    //Truth distance from edge XY
+                    truthDistsFromTileEdgesXY[layerLoop] = tile.getDistanceToEdges_XY( trackVec[trackLoop].getTruthPosition(layerLoop) );
 
+                    //Truth distance from edge UVW
+                    truthDistsFromTileEdgesUVW[layerLoop] = tile.getDistanceToEdges_UVW( trackVec[trackLoop].getTruthPositionUVWAtLayer(layerLoop) );
+                    std::cout << "True: " << setw(12) << truthDistsFromTileEdgesUVW[layerLoop][0] << setw(12) << truthDistsFromTileEdgesUVW[layerLoop][1];
+                    std::cout << setw(12) << truthDistsFromTileEdgesUVW[layerLoop][2] << std::endl;
+                    
 
+                    //Hit19 set
+                    for (unsigned hitLoop(0);hitLoop<hitsByLayer_[layerLoop].size();hitLoop++) {
+
+                        ROOT::Math::XYPoint hitXY(hitsByLayer_[layerLoop][hitLoop].get_x(),
+                                                  hitsByLayer_[layerLoop][hitLoop].get_y());
+                        Hexagon hitTile(geomConv.cellSize(layerLoop,radialDisplacement), false, hitXY);
+
+                        UVWPoint centreUVW = tile.getUVWCentre();
+                        UVWPoint neighbourUVW = hitTile.getUVWCentre();
+                        UVWPoint dispUVW = neighbourUVW - centreUVW;
+                        float dU,dV,dW;
+
+                        float b = geomConv.cellSize(layerLoop,radialDisplacement)*sqrt(3)/2.0;
+
+                        dU = dispUVW.getU();
+                        dV = dispUVW.getV();
+                        dW = dispUVW.getW();
+
+                        if (fabs(dU) <= 4*b+0.1 && fabs(dV) <= 4*b+0.1 && fabs(dW) <= 4*b+0.1) {
+                            hit19.push_back(hitsByLayer_[layerLoop][hitLoop]);
+                        }
                     }
+                    //Energy-weighted position (H19)
+                    
+                    //Energy-weighted position from centre XY (H19)
+
+                    //Energy-weighted position from edge XY (H19)
+
+                    //Energy-weighted position in UVW (H19)
+
+                    //Energy-weighted position from centre in UVW (H19)
+                    
+                    //Energy-weighted position from edge in UVW (H19)
 
 
                 }else {
@@ -274,8 +302,8 @@
                 hitsByLayer7[layerLoop] = hit7;
                 //XY
                 energyWeightedXY[layerLoop]   = energyWeightedPoint;
-                distsFromHitCentre[layerLoop] = distFromHitCentre;
-                distsFromTileEdges[layerLoop] = distFromTileEdge;
+                distsFromHitCentreXY[layerLoop] = distFromHitCentreXY;
+                distsFromTileEdgesXY[layerLoop] = distFromTileEdgesXY;
                 //UVW
                 energyWeightedUVW[layerLoop]     = energyWeightedPointUVW;
                 distsFromHitCentreUVW[layerLoop] = distFromHitCentreUVW;
@@ -287,12 +315,15 @@
             trackVec[trackLoop].setCentralHitsByLayer(centralHitsByLayer);
             //XY
             trackVec[trackLoop].setEnergyWeightedXY(energyWeightedXY);
-            trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentre);
-            trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdges);
+            trackVec[trackLoop].setDistsFromHitCentre(distsFromHitCentreXY);
+            trackVec[trackLoop].setDistsFromTileEdges(distsFromTileEdgesXY);
+            trackVec[trackLoop].setTruthDistsFromTileEdgesXY(truthDistsFromTileEdgesXY);
             //UVW
             trackVec[trackLoop].setEnergyWeightedUVW(energyWeightedUVW);
             trackVec[trackLoop].setDistsFromHitCentreUVW(distsFromHitCentreUVW);
             trackVec[trackLoop].setDistsFromTileEdgesUVW(distsFromTileEdgesUVW);
+            trackVec[trackLoop].setTruthDistsFromTileEdgesUVW(truthDistsFromTileEdgesUVW);
+            std::cout << trackVec[trackLoop].getTruthDistsFromTileEdgesUVW()[0].size() << std::endl;
 
             //Print info to screen
             if (debug_) {
@@ -367,28 +398,17 @@
             outStruct.distsFromHitCentreUPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getUPerp();
             outStruct.distsFromHitCentreVPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getVPerp();
             outStruct.distsFromHitCentreWPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getWPerp();
+            outStruct.truthDistsFromTileEdgesX[layer] = tracks_[index].getTruthDistsFromTileEdgesXYAtLayer(layer).X();
+            outStruct.truthDistsFromTileEdgesY[layer] = tracks_[index].getTruthDistsFromTileEdgesXYAtLayer(layer).Y();
+            /*
+            std::vector<float> uvw = tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer);
+            std::cout << setw(12) << uvw.size() << std::endl;
+            outStruct.truthDistsFromTileEdgesU[layer] = uvw[0];
+            outStruct.truthDistsFromTileEdgesV[layer] = uvw[1];
+            outStruct.truthDistsFromTileEdgesW[layer] = uvw[2];
+            */
         }
         
         return outStruct;
     }
-/*
-    UVWPoint getTruthPositionUVWAtLayer(unsigned layer) {return truthPositionsUVW_[layer];}
-    UVWPoint getEnergyWeightedUVWAtLayer(unsigned layer) {return energyWeightedUVW_[layer];}
-    UVWPoint getDistsFromHitCentreUVWAtLayer(unsigned layer) {return distsFromHitCentreUVW_[layer];}
-    std::vector<float> getDistsFromTileEdgesUVWAtLayer(unsigned layer) {return distsFromTileEdgesUVW_[layer];}
-
-    Float_t energyWeightedU[28];
-    Float_t energyWeightedV[28];
-    Float_t energyWeightedW[28];
-    Float_t truthU[28];
-    Float_t truthV[28];
-    Float_t truthW[28];
-    Float_t distsFromHitCentreU[28];
-    Float_t distsFromHitCentreV[28];
-    Float_t distsFromHitCentreW[28];
-    Float_t distsFromHitCentreUPerp[28];
-    Float_t distsFromHitCentreVPerp[28];
-    Float_t distsFromHitCentreWPerp[28];
-*/
-
 

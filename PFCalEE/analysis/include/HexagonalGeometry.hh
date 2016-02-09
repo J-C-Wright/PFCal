@@ -90,6 +90,12 @@ class UVWPoint {
             ROOT::Math::XYPoint point( wPerp_, w_*-1.0);
             return point;
         }
+        void changeOrientation() {
+            float vTemp = vPerp_;
+            float wTemp = wPerp_;
+            setUVW(vTemp,wTemp);
+        }
+
         //Operator overloading
         UVWPoint operator+(UVWPoint point) {
         
@@ -109,10 +115,6 @@ class UVWPoint {
             return newPoint;
         }
 };
-
-        
-
-            
 
 class Hexagon {
 
@@ -151,12 +153,13 @@ class Hexagon {
         float getEdgeSize() { return edgeSize_; } 
         bool isEdgeUp() { return isEdgeUp_; }
         ROOT::Math::XYPoint getCentre() { return centre_; }
-        UVWPoint getUVWCentre() {return uvwCentre_;}
+        UVWPoint getUVWCentre() { return uvwCentre_; }
 
         //Derived
         ROOT::Math::XYPoint getDistanceToEdges_XY(ROOT::Math::XYPoint hit); 
-        std::pair<float,float> getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit);
-        std::vector<float>     getDistanceToEdges_UVW(ROOT::Math::XYPoint hit);
+        ROOT::Math::XYPoint getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit);
+        std::vector<float>  getDistanceToEdges_UVW(ROOT::Math::XYPoint hit);
+        std::vector<float>  getDistanceToEdges_UVW(UVWPoint hitUVW);
 
 };
 
