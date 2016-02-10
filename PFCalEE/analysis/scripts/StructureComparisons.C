@@ -18,10 +18,10 @@ void StructureComparisons() {
 
     TCanvas C1("c1");
 
-    TFile *file100 = TFile::Open("out_V100.root");
-    TFile *file101 = TFile::Open("out_V101.root");
-    TFile *file102 = TFile::Open("out_V102.root");
-    TFile *file103 = TFile::Open("out_V103.root");
+    TFile *file100 = TFile::Open("RootFiles/out_Sq_V100.root");
+    TFile *file101 = TFile::Open("RootFiles/out_V101.root");
+    TFile *file102 = TFile::Open("RootFiles/out_V102.root");
+    TFile *file103 = TFile::Open("RootFiles/out_V103.root");
 
     TFile *outputFile = new TFile("Plots/StructurePlots.root","RECREATE");
     outputFile->cd();
@@ -33,6 +33,10 @@ void StructureComparisons() {
 
     TGraph* totalE_100 = getMeanTotalEVsLayer(tree100);
     totalE_100->SetLineColor(1);
+
+    totalE_100->Draw();
+    C1.Print("Plots/TotalEnergyByLayerV100.pdf");
+
     TGraph* totalE_101 = getMeanTotalEVsLayer(tree101);
     totalE_101->SetLineColor(2);
     TGraph* totalE_102 = getMeanTotalEVsLayer(tree102);
@@ -48,6 +52,10 @@ void StructureComparisons() {
 
     TGraph* eRatio_100 = getMeanERatioVsLayer(tree100);
     eRatio_100->SetLineColor(1);
+
+    eRatio_100->Draw();
+    C1.Print("Plots/ERatioByLayerV100.pdf");
+
     TGraph* eRatio_101 = getMeanERatioVsLayer(tree101);
     eRatio_101->SetLineColor(2);
     TGraph* eRatio_102 = getMeanERatioVsLayer(tree102);
@@ -63,6 +71,10 @@ void StructureComparisons() {
 
     TGraph* drift_100 = getDriftVsLayer(tree100);
     drift_100->SetLineColor(1);
+
+    drift_100->Draw();
+    C1.Print("Plots/DriftByLayerV100.pdf");
+
     TGraph* drift_101 = getDriftVsLayer(tree101);
     drift_101->SetLineColor(2);
     TGraph* drift_102 = getDriftVsLayer(tree102);
@@ -75,6 +87,42 @@ void StructureComparisons() {
     drift_102->Draw("same");
     C1.Print("Plots/DriftByLayer.pdf");
     C1.Clear();
+
+    TGraph* empties_100 = getNumberOfEmptyLayers(tree100);
+    empties_100->Draw();
+    C1.Print("Plots/FractionEmptyV100.pdf");
+
+    TGraph* empties_101 = getNumberOfEmptyLayers(tree101);
+    empties_101->SetLineColor(2);
+    TGraph* empties_102 = getNumberOfEmptyLayers(tree102);
+    empties_102->SetLineColor(3);
+    TGraph* empties_103 = getNumberOfEmptyLayers(tree103);
+    empties_103->SetLineColor(4);
+
+    empties_100->Draw();
+    empties_101->Draw("same");
+    empties_102->Draw("same");
+    empties_103->Draw("same");
+    C1.Print("Plots/FractionEmpty.pdf");
+    C1.Clear();
+
+    TGraph* meanNumHits_100 = getMeanNumberOfHitsByLayer(tree100);
+    meanNumHits_100->Draw();
+    C1.Print("Plots/MeanNumberOfHitsV100.pdf");
+
+    TGraph* meanNumHits_101 = getMeanNumberOfHitsByLayer(tree101);
+    meanNumHits_101->SetLineColor(2);
+    TGraph* meanNumHits_102 = getMeanNumberOfHitsByLayer(tree102);
+    meanNumHits_102->SetLineColor(3);
+    TGraph* meanNumHits_103 = getMeanNumberOfHitsByLayer(tree103);
+    meanNumHits_103->SetLineColor(4);
+
+    meanNumHits_100->Draw();
+    meanNumHits_101->Draw("same");
+    meanNumHits_102->Draw("same");
+    meanNumHits_103->Draw("same");
+    C1.Print("Plots/MeanNumberOfHits.pdf");
+
 }
 
 
@@ -148,10 +196,63 @@ TGraph* getDriftVsLayer(TTree* tree) {
     graph->SetLineWidth(2);
     graph->SetTitle("Mean bias by Layer");
     graph->GetXaxis()->SetTitle("Layer");
-    graph->GetYaxis()->SetTitle("Mean bias");
+    graph->GetYaxis()->SetTitle("Mean bias (x_{measured} - x_{true})");
     return graph;    
 }
 
+TGraph* getNumberOfEmptyLayers(TTree* tree) {
+    TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
+    Double_t fracEmptyLayers[28];
+    Double_t layerN[28];
+    for (unsigned layer(0);layer<28;layer++) {
+        unsigned count(0), empties(0);
+        layerN[layer] = layer;
+        for (unsigned event(0);event<tree->GetEntries();event++) {
+            tree->GetEntry(event);
+            unsigned numHits = (unsigned)tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(11)->GetName())->GetValue(layer);
+            if (numHits == 0) {
+                empties++;
+            }
+            count++;
+        }
+        fracEmptyLayers[layer] = empties/(float)count;
+    }
+    TGraph * graph = new TGraph(28,layerN,fracEmptyLayers);
+    graph->SetLineWidth(2);
+    graph->SetTitle("Empty Layers");
+    graph->GetXaxis()->SetTitle("Layer");
+    graph->GetYaxis()->SetTitle("Fraction with empty 3x3");
+    return graph;    
+}
+
+TGraph* getMeanNumberOfHitsByLayer(TTree* tree) {
+    TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
+    Double_t meanNumHits[28];
+    Double_t layerN[28];
+    for (unsigned layer(0);layer<28;layer++) {
+        unsigned count(0),numHits(0);
+        layerN[layer] = layer;
+        for (unsigned event(0);event<tree->GetEntries();event++) {
+            tree->GetEntry(event);
+            unsigned hits = (unsigned)tree->GetBranch("truthInfo")->GetLeaf(leafNames->At(11)->GetName())->GetValue(layer);
+            if (hits != 0) {
+                numHits += hits;
+                count++;
+            }
+        }
+        meanNumHits[layer] = numHits/(float)count;
+    }
+    TGraph * graph = new TGraph(28,layerN,meanNumHits);
+    graph->SetLineWidth(2);
+    graph->SetTitle("Mean number of hits");
+    graph->GetXaxis()->SetTitle("Layer");
+    graph->GetYaxis()->SetTitle("Mean number of hits in 3x3");
+    return graph;    
+}
+
+
+
+        
 
 
 

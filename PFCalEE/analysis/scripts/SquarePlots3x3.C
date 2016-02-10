@@ -33,8 +33,9 @@ void SquarePlots3x3() {
     TH1F* projectionBiasEdge[28];
 
     unsigned layerNum(28);
+    TCanvas c1("c1");
  
-    for (unsigned layer(0);layer<layerNum;layer++) {
+    for (unsigned layer(5);layer<layerNum;layer++) {
         
         std::cout << "Processing layer " << layer << std::endl;
 
@@ -78,7 +79,7 @@ void SquarePlots3x3() {
         TGraphAsymmErrors *graph = new TGraphAsymmErrors(numSlices+2,sliceCentres,sliceModes,zeroes,zeroes,sliceErr1,sliceErr2);
         TF1 *fit   = new TF1("fit" ,"[0]*x + [1]*pow(x,3) + [2]*pow(x,5) + [3]*pow(x,7)",-5,5);
         graph->Fit(fit,"QNR");
-        graph->SetLineColor(kRed);
+        graph->SetLineColor(kBlue);
         graph->SetLineWidth(2);
         layerCurve[layer] = graph;
         layerFits[layer] = fit;
@@ -94,6 +95,51 @@ void SquarePlots3x3() {
         projectionCorrEdge[layer] = getCorrectedSliceProjection(layer, 100, tree, -1.0, 1.0, layerFits[layer], startLayer);
         projectionBiasEdge[layer] = getBiasedSliceProjection(layer, 100, tree, -1.0, 1.0, startLayer);
 
+
+        if (layer == 6) {
+            //Print example plots
+            layerBiases[layer]->GetXaxis()->SetTitle("x_{measured} distance to edge (mm)");
+            layerBiases[layer]->GetYaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            layerBiases[layer]->Draw();
+            c1.Print("Plots/LayerBiasExample.pdf");
+            c1.Clear();
+            graph->GetXaxis()->SetTitle("x_{measured} distance to edge (mm)");
+            graph->GetYaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            graph->Draw();
+            fit->Draw("same");
+            c1.Print("Plots/BiasSlicesExample.pdf");
+            c1.Clear();
+            layerCorrection[layer]->GetXaxis()->SetTitle("x_{measured} distance to edge (mm)");
+            layerCorrection[layer]->GetYaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            layerCorrection[layer]->Draw();
+            c1.Print("Plots/BiasCorrectedExample.pdf");
+            c1.Clear();
+            projectionCorrEdge[layer]->GetXaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            projectionCorrEdge[layer]->SetLineWidth(2);
+            projectionCorrEdge[layer]->Draw();
+            c1.Print("Plots/ProjectionCorrEdgeExample.pdf");
+            c1.Clear();
+            projectionBiasEdge[layer]->GetXaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            projectionBiasEdge[layer]->SetLineWidth(2);
+            projectionBiasEdge[layer]->Draw();
+            c1.Print("Plots/ProjectionBiasEdgeExample.pdf");
+            c1.Clear();
+            projectionCorr[layer]->GetXaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            projectionCorr[layer]->SetLineWidth(2);
+            projectionCorr[layer]->Draw();
+            c1.Print("Plots/ProjectionCorrExample.pdf");
+            c1.Clear();
+            projectionBias[layer]->GetXaxis()->SetTitle("x_{measured} - x_{true} (mm)");
+            projectionBias[layer]->SetLineWidth(2);
+            projectionBias[layer]->Draw();
+            c1.Print("Plots/ProjectionBiasExample.pdf");
+            c1.Clear();
+
+        }
+            
+
+
+
     }
 
     outputFile->cd();
@@ -103,7 +149,6 @@ void SquarePlots3x3() {
         layerFits[layer]->Write();
     }
 
-    TCanvas c1("c1");
     c1.Print(Form("LayerBiases2_S%d.pdf(",startLayer));
     for (unsigned layer(0);layer<28;layer++) {
         layerBiases[layer]->Draw();
