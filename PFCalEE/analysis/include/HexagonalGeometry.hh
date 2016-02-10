@@ -24,6 +24,14 @@
 
 using namespace std;
 
+struct UVWEdgeDisplacements {
+
+    float dU;
+    float dV;
+    float dW;
+
+};
+
 class UVWPoint {
 
     private: 
@@ -158,8 +166,7 @@ class Hexagon {
         //Derived
         ROOT::Math::XYPoint getDistanceToEdges_XY(ROOT::Math::XYPoint hit); 
         ROOT::Math::XYPoint getDisplacementFromCentre_XY(ROOT::Math::XYPoint hit);
-        std::vector<float>  getDistanceToEdges_UVW(ROOT::Math::XYPoint hit);
-        std::vector<float>  getDistanceToEdges_UVW(UVWPoint hitUVW);
+        UVWEdgeDisplacements  getDistanceToEdges_UVW(UVWPoint hitUVW);
 
 };
 

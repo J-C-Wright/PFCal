@@ -50,6 +50,9 @@ struct TrackInfo {
     Float_t distsFromHitCentreUPerp[28];
     Float_t distsFromHitCentreVPerp[28];
     Float_t distsFromHitCentreWPerp[28];
+    Float_t distsFromTileEdgesU[28];
+    Float_t distsFromTileEdgesV[28];
+    Float_t distsFromTileEdgesW[28];
     Float_t truthDistsFromTileEdgesX[28];
     Float_t truthDistsFromTileEdgesY[28];
     Float_t truthDistsFromTileEdgesU[28];
@@ -74,8 +77,8 @@ class TrackTruth {
         std::vector<UVWPoint> truthPositionsUVW_;
         std::vector<UVWPoint> energyWeightedUVW_;
         std::vector<UVWPoint> distsFromHitCentreUVW_;
-        std::vector<std::vector<float>> distsFromTileEdgesUVW_;
-        std::vector<std::vector<float>> truthDistsFromTileEdgesUVW_;
+        std::vector<UVWEdgeDisplacements> distsFromTileEdgesUVW_;
+        std::vector<UVWEdgeDisplacements> truthDistsFromTileEdgesUVW_;
         
 
     public:
@@ -92,11 +95,9 @@ class TrackTruth {
         void setTruthPositionsUVW(std::vector<UVWPoint> truthPositionsUVW) {truthPositionsUVW_ = truthPositionsUVW;}
         void setEnergyWeightedUVW(std::vector<UVWPoint> energyWeightedUVW) {energyWeightedUVW_ = energyWeightedUVW;}
         void setDistsFromHitCentreUVW(std::vector<UVWPoint> distsFromHitCentreUVW) {distsFromHitCentreUVW_ = distsFromHitCentreUVW;}
-        void setDistsFromTileEdgesUVW(std::vector<std::vector<float>> distsFromTileEdgesUVW) {distsFromTileEdgesUVW_ = distsFromTileEdgesUVW;}
-        void setTruthDistsFromTileEdgesUVW(std::vector<std::vector<float>> truthDistsFromTileEdgesUVW) {
+        void setDistsFromTileEdgesUVW(std::vector<UVWEdgeDisplacements> distsFromTileEdgesUVW) {distsFromTileEdgesUVW_ = distsFromTileEdgesUVW;}
+        void setTruthDistsFromTileEdgesUVW(std::vector<UVWEdgeDisplacements> truthDistsFromTileEdgesUVW) {
             truthDistsFromTileEdgesUVW_ = truthDistsFromTileEdgesUVW;
-            std::cout << setw(12) << truthDistsFromTileEdgesUVW_.size() << setw(12) << truthDistsFromTileEdgesUVW.size() << std::endl;
-            std::cout << setw(12) << truthDistsFromTileEdgesUVW_[0].size() << setw(12) << truthDistsFromTileEdgesUVW[0].size() << std::endl;
         }
         
 
@@ -115,8 +116,8 @@ class TrackTruth {
         std::vector<UVWPoint> getTruthPositionsUVW() {return truthPositionsUVW_;}
         std::vector<UVWPoint> getEnergyWeightedUVW() {return energyWeightedUVW_;}
         std::vector<UVWPoint> getDistsFromHitCentreUVW() {return distsFromHitCentreUVW_;}
-        std::vector<std::vector<float>> getDistsFromTileEdgesUVW() {return distsFromTileEdgesUVW_;}
-        std::vector<std::vector<float>> getTruthDistsFromTileEdgesUVW() {return truthDistsFromTileEdgesUVW_;}
+        std::vector<UVWEdgeDisplacements> getDistsFromTileEdgesUVW() {return distsFromTileEdgesUVW_;}
+        std::vector<UVWEdgeDisplacements> getTruthDistsFromTileEdgesUVW() {return truthDistsFromTileEdgesUVW_;}
 
         //Derived
         //XY
@@ -130,8 +131,8 @@ class TrackTruth {
         UVWPoint getTruthPositionUVWAtLayer(unsigned layer) {return truthPositionsUVW_[layer];}
         UVWPoint getEnergyWeightedUVWAtLayer(unsigned layer) {return energyWeightedUVW_[layer];}
         UVWPoint getDistsFromHitCentreUVWAtLayer(unsigned layer) {return distsFromHitCentreUVW_[layer];}
-        std::vector<float> getDistsFromTileEdgesUVWAtLayer(unsigned layer) {return distsFromTileEdgesUVW_[layer];}
-        std::vector<float> getTruthDistsFromTileEdgesUVWAtLayer(unsigned layer) {return truthDistsFromTileEdgesUVW_[layer];}
+        UVWEdgeDisplacements getDistsFromTileEdgesUVWAtLayer(unsigned layer) {return distsFromTileEdgesUVW_[layer];}
+        UVWEdgeDisplacements getTruthDistsFromTileEdgesUVWAtLayer(unsigned layer) {return truthDistsFromTileEdgesUVW_[layer];}
 
         //Other
         unsigned numberOfHitsInLayer(unsigned layer) {return hitsByLayer3x3_[layer].size();}

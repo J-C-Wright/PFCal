@@ -31,45 +31,51 @@
 
     ROOT::Math::XYPoint Hexagon::getDistanceToEdges_XY(ROOT::Math::XYPoint hit) {
 
-        ROOT::Math::XYPoint centreDisplacement = getDisplacementFromCentre_XY(hit);
+        ROOT::Math::XYPoint disp = getDisplacementFromCentre_XY(hit);
 
         float dA,dB,A,B;
-        float x,y;
-        if (isEdgeUp_) {
-            A = centreDisplacement.Y();
-            B = centreDisplacement.X();
-        }else{
-            A = centreDisplacement.X();
-            B = centreDisplacement.Y();
-        }
-        dA = fabs(edgeSize_ - A);
-        dB = fabs(B - fabs( edgeSize_*0.5 + dA/sqrt(3) ));
-        if (fabs(B) > edgeSize_*0.5) {
-            dA = dB*sqrt(3);
-        }
+        float a = edgeSize_;
+        float b = edgeSize_*sqrt(3)*0.5;
 
         if (isEdgeUp_) {
-            if (A > 0 && B > 0) {
-                dA *= -1.0;
-                dB *= -1.0;
-            }else if (A > 0 && B < 0) {
-                dA *= -1.0;
-            }else if (A < 0 && B > 0) {
-                dB *= -1.0;
-            }
-            x = B;
-            y = A;
+            A = disp.Y();
+            B = disp.X();
         }else{
-            if (A > 0 && B > 0) {
-                dA *= -1.0;
-                dB *= -1.0;
-            }else if (A > 0 && B < 0) {
-                dB *= -1.0;
-            }else if (A < 0 && B > 0) {
-                dA *= -1.0;
-            }
-            x = A;
-            y = B;
+            A = disp.X();
+            B = disp.Y();
+        }
+        dA = fabs(b - fabs(A));
+        dB = fabs(a*0.5 + fabs(dA)/sqrt(3) - fabs(B));
+        if (fabs(B) > a*0.5) {
+            dA = dB*sqrt(3);
+        }
+        /*
+        if (A > 0 && B > 0) {
+            dA *= -1.0;
+            dB *= -1.0;
+        }else if (A > 0 && B < 0) {
+            dB *= -1.0;
+        }else if (A < 0 && B > 0) {
+            dA *= -1.0;
+        }
+        */
+
+        float x,y;
+        if (isEdgeUp_) {
+            x = dB;
+            y = dA;
+        }else{
+            x = dA;
+            y = dB;
+        }
+
+        if (disp.X() > 0 && disp.Y() > 0) {
+            x *= -1.0;
+            y *= -1.0;
+        }else if (disp.X() > 0 && disp.Y() < 0) {
+            x *= -1.0;
+        }else if (disp.X() < 0 && disp.Y() > 0) {
+            y *= -1.0;
         }
 
         ROOT::Math::XYPoint edgeDists(x,y);
@@ -84,10 +90,9 @@
 
     }
 
-    std::vector<float> Hexagon::getDistanceToEdges_UVW(UVWPoint hitUVW){
+    UVWEdgeDisplacements Hexagon::getDistanceToEdges_UVW(UVWPoint hitUVW){
 
         UVWPoint difference = hitUVW - uvwCentre_;
-        //difference.print();
 
         float dU = fabs(fabs(difference.getU()) - edgeSize_*sqrt(3.0)/2.0);
         if (difference.getU() > 0) dU *= -1.0;
@@ -98,11 +103,10 @@
         float dW = fabs(fabs(difference.getW()) - edgeSize_*sqrt(3.0)/2.0);
         if (difference.getW() > 0) dW *= -1.0;
             
-        std::vector<float> edgeDists(3);
-        edgeDists[0] = dU;
-        edgeDists[1] = dV;
-        edgeDists[2] = dW;
-        //std::cout << setw(12) << dU << setw(12) << dV << setw(12) << dW << std::endl;
+        UVWEdgeDisplacements edgeDists;
+        edgeDists.dU = dU;
+        edgeDists.dV = dV;
+        edgeDists.dW = dW;
 
         return edgeDists;
     }

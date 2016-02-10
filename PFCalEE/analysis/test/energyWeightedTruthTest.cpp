@@ -301,10 +301,25 @@ int main(int argc, char** argv){//main
     treeLeaves += TString("energyWeightedU[28]/F:energyWeightedV[28]/F:energyWeightedW[28]/F:truthU[28]/F:truthV[28]/F:truthW[28]/F:");
     treeLeaves += TString("distsFromHitCentreU[28]/F:distsFromHitCentreV[28]/F:distsFromHitCentreW[28]/F:");
     treeLeaves += TString("distsFromHitCentreUPerp[28]/F:distsFromHitCentreVPerp[28]/F:distsFromHitCentreWPerp[28]/F:");
+    treeLeaves += TString("distsFromTileEdgesU[28]/F:distsFromTileEdgesV[28]/F:distsFromTileEdgesW[28]/F:");
     treeLeaves += TString("truthDistsFromTileEdgesX[28]/F:truthDistsFromTileEdgesY[28]/F:truthDistsFromTileEdgesU[28]/F:");
     treeLeaves += TString("truthDistsFromTileEdgesV[28]/F:truthDistsFromTileEdgesW[28]/F");
     trackTree->Branch("truthInfo",&trackStruct.showerStart,treeLeaves);
+
     /*
+    unsigned showerStart;
+    Float_t energyWeightedX[28];
+    Float_t energyWeightedY[28];
+    Float_t truthX[28];
+    Float_t truthY[28];
+    Float_t distsFromHitCentreX[28];
+    Float_t distsFromHitCentreY[28];
+    Float_t distsFromTileEdgesX[28];
+    Float_t distsFromTileEdgesY[28];
+    Float_t centralE[28];
+    Float_t totalE[28];
+    UInt_t  numHitsInLayer[28];
+    //UVWs
     Float_t energyWeightedU[28];
     Float_t energyWeightedV[28];
     Float_t energyWeightedW[28];
@@ -318,12 +333,16 @@ int main(int argc, char** argv){//main
     Float_t distsFromHitCentreVPerp[28];
     Float_t distsFromHitCentreWPerp[28];
 
+    Float_t distsFromTileEdgesU[28];
+    Float_t distsFromTileEdgesV[28];
+    Float_t distsFromTileEdgesW[28];
     Float_t truthDistsFromTileEdgesX[28];
     Float_t truthDistsFromTileEdgesY[28];
     Float_t truthDistsFromTileEdgesU[28];
     Float_t truthDistsFromTileEdgesV[28];
     Float_t truthDistsFromTileEdgesW[28];
     */
+
 
 //Calculating track truth
     std::vector<TrackTruth> tracks;
@@ -340,14 +359,18 @@ int main(int argc, char** argv){//main
     
     for (unsigned ievt(0); ievt<nEvts; ++ievt){
 
-        std::cout << "\n... Processing entry: " << ievt << std::endl;
-        std::cout << "Reading info from trees... ";
+        if (ievt%100 == 0){
+            std::cout << "\n... Processing entry: " << ievt << std::endl;
+            std::cout << "Reading info from trees... ";
+        }
 
         lSimTree->GetEntry(ievt);
         lRecTree->GetEntry(ievt);
 
-        std::cout << "Done!" << std::endl;
-        std::cout << "Producing... " << std::endl;
+        if (ievt%100 == 0){
+            std::cout << "Done!" << std::endl;
+            std::cout << "Producing... " << std::endl;
+        }
 
         if ((*genvec).size() == 1) {
             photonCount++;
@@ -355,10 +378,10 @@ int main(int argc, char** argv){//main
             tracks.push_back(trackTruthProducer.getTrack(0));
             trackStruct = trackTruthProducer.trackStruct(0);
             trackTree->Fill();
+            if (ievt%100 == 0){std::cout << "Done!" << std::endl;}
         }else{
-            std::cout << "Not a single photon -- Skipping event." << std::endl;
+            if (ievt%100 == 0){std::cout << "Not a single photon -- Skipping event." << std::endl;}
         }
-        std::cout << "Done!" << std::endl;
     }
     std::cout << "There were " << photonCount << " photons" << std::endl;
 
