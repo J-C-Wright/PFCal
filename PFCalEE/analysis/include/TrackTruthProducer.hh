@@ -144,7 +144,7 @@ class TrackTruth {
             }
             return energy;
         }
-        
+/* 
         unsigned getShowerStart(float cut) {
             std::vector<float> energies;
             for (unsigned layer(0);layer<28;layer++) {energies.push_back( totalEnergyOf3x3Hit(layer) );}
@@ -154,6 +154,15 @@ class TrackTruth {
             } 
             return 0;
         } 
+*/
+        unsigned getShowerStart() {
+            for (unsigned layer(0);layer<28;layer++) {
+                if (hitsByLayer3x3_[layer].size() > 0) {
+                    return layer;
+                }
+            }
+            return 30;
+        }
 
 };
 

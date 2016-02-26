@@ -33,52 +33,24 @@
 
         ROOT::Math::XYPoint disp = getDisplacementFromCentre_XY(hit);
 
-        float dA,dB,A,B;
         float a = edgeSize_;
         float b = edgeSize_*sqrt(3)*0.5;
 
-        if (isEdgeUp_) {
-            A = disp.Y();
-            B = disp.X();
-        }else{
-            A = disp.X();
-            B = disp.Y();
-        }
-        dA = fabs(b - fabs(A));
-        dB = fabs(a*0.5 + fabs(dA)/sqrt(3) - fabs(B));
-        if (fabs(B) > a*0.5) {
-            dA = dB*sqrt(3);
-        }
-        /*
-        if (A > 0 && B > 0) {
-            dA *= -1.0;
-            dB *= -1.0;
-        }else if (A > 0 && B < 0) {
-            dB *= -1.0;
-        }else if (A < 0 && B > 0) {
-            dA *= -1.0;
-        }
-        */
+        float A = isEdgeUp_ ? disp.Y() : disp.X();
+        float B = isEdgeUp_ ? disp.X() : disp.Y();
+        float dA,dB,eA,eB;
+
+        eB = a/2.0 + fabs(b-fabs(A))/sqrt(3);
+        eA = fabs(B) > a/2.0 ? fabs(eB - fabs(B))*sqrt(3) : b;
+        
+        dA = A > 0 ? A - eA : A + eA;
+        dB = B > 0 ? B - eB : B + eB;
 
         float x,y;
-        if (isEdgeUp_) {
-            x = dB;
-            y = dA;
-        }else{
-            x = dA;
-            y = dB;
-        }
-
-        if (disp.X() > 0 && disp.Y() > 0) {
-            x *= -1.0;
-            y *= -1.0;
-        }else if (disp.X() > 0 && disp.Y() < 0) {
-            x *= -1.0;
-        }else if (disp.X() < 0 && disp.Y() > 0) {
-            y *= -1.0;
-        }
-
+        x = isEdgeUp_ ? dB : dA;
+        y = isEdgeUp_ ? dA : dB;
         ROOT::Math::XYPoint edgeDists(x,y);
+
         return edgeDists;
     }
 
@@ -93,20 +65,16 @@
     UVWEdgeDisplacements Hexagon::getDistanceToEdges_UVW(UVWPoint hitUVW){
 
         UVWPoint difference = hitUVW - uvwCentre_;
+        float b = 0.5*edgeSize_*sqrt(3);
 
-        float dU = fabs(fabs(difference.getU()) - edgeSize_*sqrt(3.0)/2.0);
-        if (difference.getU() > 0) dU *= -1.0;
+        float dU = difference.getU();
+        float dV = difference.getV();
+        float dW = difference.getW();
 
-        float dV = fabs(fabs(difference.getV()) - edgeSize_*sqrt(3.0)/2.0);
-        if (difference.getV() > 0) dV *= -1.0;
-
-        float dW = fabs(fabs(difference.getW()) - edgeSize_*sqrt(3.0)/2.0);
-        if (difference.getW() > 0) dW *= -1.0;
-            
         UVWEdgeDisplacements edgeDists;
-        edgeDists.dU = dU;
-        edgeDists.dV = dV;
-        edgeDists.dW = dW;
+        edgeDists.dU = dU > 0 ? dU - b : dU + b;
+        edgeDists.dV = dV > 0 ? dV - b : dV + b;
+        edgeDists.dW = dW > 0 ? dW - b : dW + b;
 
         return edgeDists;
     }

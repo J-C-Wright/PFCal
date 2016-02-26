@@ -264,6 +264,7 @@
 
                     //Set energy-weighted position from centre in UVW
                     distFromHitCentreUVW.setUVW(distFromHitCentreXY); 
+                    distFromHitCentreUVW.changeOrientation();
 
                     //Set energy-weighted position from edge in UVW
                     distFromTileEdgeUVW = tile.getDistanceToEdges_UVW(energyWeightedPointUVW);
@@ -299,7 +300,7 @@
             //Print info to screen
             if (debug_) {
                 std::cout << "Track " << trackLoop << std::endl;
-                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
+                std::cout << "Shower start: " << trackVec[trackLoop].getShowerStart() << std::endl;
                 std::cout << setw(12) << "x0"  << setw(12) << "y0" << setw(12) << "z0" << setw(12) << "PDG Id" ;
                 std::cout << setw(12) << "Eta" << setw(12) << "Phi" << std::endl;
                 std::cout << setw(12) << trackVec[trackLoop].getParticleInfo().x();
@@ -327,7 +328,7 @@
                     std::cout << setw(12) << layerLoop;
                     std::cout << std::endl;
                 }
-                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart(0.1) << std::endl;
+                std::cout << "Shower starts at layer " << trackVec[trackLoop].getShowerStart() << std::endl;
             }
         }
         tracks_ = trackVec;
@@ -343,7 +344,7 @@
         std::vector<ROOT::Math::XYPoint> distsFromTileEdges = tracks_[index].getDistsFromTileEdges();
         std::vector<HGCSSRecoHit> centralHitsByLayer = tracks_[index].getCentralHitsByLayer();
 
-        outStruct.showerStart = tracks_[index].getShowerStart(0.1);
+        outStruct.showerStart = tracks_[index].getShowerStart();
         for (unsigned layer(0);layer<28;layer++) {
             outStruct.truthX[layer] = truthPositions[layer].X();
             outStruct.truthY[layer] = truthPositions[layer].Y();
@@ -377,40 +378,14 @@
             outStruct.distsFromHitCentreVPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getVPerp();
             outStruct.distsFromHitCentreWPerp[layer] = tracks_[index].getDistsFromHitCentreUVWAtLayer(layer).getWPerp();
 
-            outStruct.distsFromHitCentreU[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dU;
-            outStruct.distsFromHitCentreV[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dV;
-            outStruct.distsFromHitCentreW[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dW;
+            outStruct.distsFromTileEdgesU[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dU;
+            outStruct.distsFromTileEdgesV[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dV;
+            outStruct.distsFromTileEdgesW[layer] = tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dW;
 
             outStruct.truthDistsFromTileEdgesU[layer] = tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dU;
             outStruct.truthDistsFromTileEdgesV[layer] = tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dV;
             outStruct.truthDistsFromTileEdgesW[layer] = tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dW;
-/*
-            std::cout << "Layer: " << layer << std::endl;
-            std::cout << "Edge displacements" << std::endl;
-            std::cout << setw(12) << "Truth" << setw(12) << "Meas." << std::endl;
-            std::cout << "U: " << setw(12) << tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dU; 
-            std::cout << setw(12) << tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dU << std::endl; 
-            std::cout << "V: " << setw(12) << tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dV; 
-            std::cout << setw(12) << tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dV << std::endl; 
-            std::cout << "W: " << setw(12) << tracks_[index].getTruthDistsFromTileEdgesUVWAtLayer(layer).dW; 
-            std::cout << setw(12) << tracks_[index].getDistsFromTileEdgesUVWAtLayer(layer).dW << std::endl; 
-            std::cout << "X: " << setw(12) << tracks_[index].getTruthDistsFromTileEdgesXYAtLayer(layer).X();
-            std::cout << setw(12) << tracks_[index].getDistsFromTileEdgesAtLayer(layer).X() << std::endl;
-            std::cout << "Y: " << setw(12) << tracks_[index].getTruthDistsFromTileEdgesXYAtLayer(layer).Y();
-            std::cout << setw(12) << tracks_[index].getDistsFromTileEdgesAtLayer(layer).Y() << std::endl;
 
-            std::cout << "Positions" << std::endl;
-            std::cout << setw(12) << "Truth" << setw(12) << "Meas." << std::endl;
-            std::cout << "X: " << setw(12) << truthPositions[layer].X();
-            std::cout << setw(12) << energyWeightedXY[layer].X() << std::endl;
-            std::cout << "Y: " << setw(12) << truthPositions[layer].Y();
-            std::cout << setw(12) << energyWeightedXY[layer].Y() << std::endl;
-
-            std::cout << "Dists from centre" << std::endl;
-            std::cout << setw(12) << tracks_[index].getDistsFromHitCentreAtLayer(layer).X() << std::endl;
-            std::cout << setw(12) << tracks_[index].getDistsFromHitCentreAtLayer(layer).Y() << std::endl;
-            std::cout << "----------------------" << std::endl;
-*/
         }
         
         return outStruct;
