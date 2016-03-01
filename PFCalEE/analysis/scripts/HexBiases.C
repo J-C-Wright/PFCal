@@ -86,7 +86,7 @@ void HexBiases() {
 
             //Effective sigma at +/- 1mm
             //Corrected 
-            TH1F* biasProjCorrEdgeXR = getBiasProjection(layer,bins,tree,1,3,7,6,0.5,0.0,a/2.0,corrFitX,showerStart);
+            TH1F* biasProjCorrEdgeXR = getBiasProjection(layer,bins,tree,1,3,7,6,1,0.0,a/2.0,corrFitX,showerStart);
             biasProjCorrEdgeXR->Draw();
             c1.Print(Form("Plots_Hexes/BiasProjectionAtEdgeXRL%d.pdf",layer));
             TH1F* biasProjCorrEdgeUR = getBiasProjection(layer,bins,tree,12,15,24,21,1,0.0,a/2.0,corrFitU,showerStart);
@@ -111,7 +111,7 @@ void HexBiases() {
             csv << effSigmaMacro(biasProjCorrEdgeWR) << ",";
 
             //Uncorrected
-            TH1F* biasProjEdgeXR = getBiasProjection(layer,bins,tree,1,3,7,6,0.5,0.0,a/2.0,dummyFit,showerStart);
+            TH1F* biasProjEdgeXR = getBiasProjection(layer,bins,tree,1,3,7,6,1,0.0,a/2.0,dummyFit,showerStart);
             TH1F* biasProjEdgeUR = getBiasProjection(layer,bins,tree,12,15,24,21,1,0.0,a/2.0,dummyFit,showerStart);
             TH1F* biasProjEdgeVR = getBiasProjection(layer,bins,tree,13,16,25,22,1,0.0,a/2.0,dummyFit,showerStart);
             TH1F* biasProjEdgeWR = getBiasProjection(layer,bins,tree,14,17,26,23,1,0.0,a/2.0,dummyFit,showerStart);

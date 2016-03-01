@@ -4,7 +4,7 @@ void HexCSVExport() {
 
     TCanvas c1("c1");
 
-    TFile *file = TFile::Open("RootFiles/out_Hex_V100_100k.root");
+    TFile *file = TFile::Open("RootFiles/out_Hex_V100_100k_ZS0p5.root");
     TTree *tree = (TTree*)file->Get("tracks");
 
     TObjArray *leafNames = tree->GetBranch("truthInfo")->GetListOfLeaves(); 
@@ -23,6 +23,10 @@ void HexCSVExport() {
     outputToCSV(tree, layer, -1, b, a);
 }
     
+
+
+
+
 void outputToCSV(TTree* tree, unsigned layer, int size, float edgeDist, float cornerDist) {
 
     unsigned limit = size > 0 ? size : tree->GetEntries();
